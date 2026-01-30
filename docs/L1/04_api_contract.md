@@ -32,6 +32,8 @@
 - `completedAt != null` のタスクは Logbook のみ表示する
 - `sortKey` は任意だが、指定する場合は空白不可（空文字は拒否）
 - `areaId` / `projectId` は存在確認を行い、他ユーザーの ID は 400
+- `projectId` がある場合、`areaId` は Project の `area_id` と一致必須
+- `projectId` に Area が紐づいている場合、`areaId` 未指定なら自動補完
 
 ---
 
