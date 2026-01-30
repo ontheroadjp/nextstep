@@ -147,3 +147,25 @@ export async function ensureOwnedReference(
   }
   return null;
 }
+
+export async function getProjectAreaId(
+  supabase: SupabaseClient,
+  userId: string,
+  projectId: string
+): Promise<{ areaId: string | null } | Response> {
+  const { data, error: fetchError } = await supabase
+    .from("projects")
+    .select("id,area_id")
+    .eq("id", projectId)
+    .eq("user_id", userId)
+    .limit(1);
+
+  if (fetchError) {
+    return error("internal_error", fetchError.message, 500);
+  }
+  if (!data || data.length === 0) {
+    return error("bad_request", "projectId is invalid", 400);
+  }
+  const projectAreaId = (data[0]?.area_id as string | null) ?? null;
+  return { areaId: projectAreaId };
+}

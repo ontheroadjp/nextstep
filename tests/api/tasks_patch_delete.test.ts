@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
 let areaExists = true;
+let projectExists = true;
+let projectAreaId: string | null = null;
 
 vi.mock("../../app/api/_helpers", async () => {
   const actual = await vi.importActual<typeof import("../../app/api/_helpers")>(
@@ -47,11 +49,15 @@ vi.mock("../../app/api/_supabase", () => ({
           }),
         };
       }
+      const exists = table === "areas" ? areaExists : projectExists;
       return {
         select: () => ({
           eq: () => ({
             eq: () => ({
-              limit: async () => ({ data: areaExists ? [{ id: "a1" }] : [], error: null }),
+              limit: async () => ({
+                data: exists ? [{ id: "a1", area_id: projectAreaId }] : [],
+                error: null,
+              }),
             }),
           }),
         }),
@@ -93,6 +99,18 @@ describe("Tasks PATCH/DELETE", () => {
     const res = await tasksPATCH(req, { params: { id: "t1" } });
     expect(res.status).toBe(400);
     areaExists = true;
+  });
+
+  it("PATCH rejects mismatched areaId and projectId", async () => {
+    projectAreaId = "a1";
+    const req = new Request("http://localhost", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ projectId: "p1", areaId: "a2" }),
+    });
+    const res = await tasksPATCH(req, { params: { id: "t1" } });
+    expect(res.status).toBe(400);
+    projectAreaId = null;
   });
 
   it("PATCH updates item", async () => {

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 let areaExists = true;
 let projectExists = true;
+let projectAreaId: string | null = null;
 
 vi.mock("../../app/api/_helpers", async () => {
   const actual = await vi.importActual<typeof import("../../app/api/_helpers")>(
@@ -44,7 +45,10 @@ vi.mock("../../app/api/_supabase", () => ({
         select: () => ({
           eq: () => ({
             eq: () => ({
-              limit: async () => ({ data: exists ? [{ id: "ref1" }] : [], error: null }),
+              limit: async () => ({
+                data: exists ? [{ id: "ref1", area_id: projectAreaId }] : [],
+                error: null,
+              }),
             }),
           }),
         }),
@@ -122,5 +126,18 @@ describe("POST /api/tasks", () => {
     const res = await POST(req);
     expect(res.status).toBe(400);
     projectExists = true;
+  });
+
+  it("rejects mismatched areaId and projectId", async () => {
+    projectAreaId = "a1";
+    const req = new Request("http://localhost", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "Task", note: "Note", projectId: "p1", areaId: "a2" }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    projectAreaId = null;
   });
 });
