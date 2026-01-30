@@ -39,6 +39,7 @@ TEST_PASSWORD_2=...
 - `completedAt` を設定したタスクは Today/Upcoming/Anytime/Someday/Inbox に出ない
 - Logbook にのみ表示される
 - RLS により他ユーザーのデータは閲覧/更新/削除できない
+- areaId / projectId の不整合は 400 になる
 
 ---
 

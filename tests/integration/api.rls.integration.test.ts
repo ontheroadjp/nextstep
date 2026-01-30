@@ -87,6 +87,47 @@ suite("integration api rls/logbook", () => {
     expect(logbookJson.items.some((t: { title: string }) => t.title.includes(prefix))).toBe(true);
   });
 
+  it("rejects mismatched areaId and projectId", async () => {
+    const prefix = makePrefix("REL");
+    prefixes.push(prefix);
+    const token = await getAccessToken(TEST_EMAIL, TEST_PASSWORD);
+
+    const areaRes = await apiFetch("/api/areas", token, {
+      method: "POST",
+      body: JSON.stringify({ name: `${prefix}AreaA` }),
+    });
+    expect(areaRes.status).toBe(201);
+    const areaJson = await areaRes.json();
+    const areaA = areaJson.item.id as string;
+
+    const areaRes2 = await apiFetch("/api/areas", token, {
+      method: "POST",
+      body: JSON.stringify({ name: `${prefix}AreaB` }),
+    });
+    expect(areaRes2.status).toBe(201);
+    const areaJson2 = await areaRes2.json();
+    const areaB = areaJson2.item.id as string;
+
+    const projectRes = await apiFetch("/api/projects", token, {
+      method: "POST",
+      body: JSON.stringify({ name: `${prefix}Project`, note: `${prefix}Note`, areaId: areaA }),
+    });
+    expect(projectRes.status).toBe(201);
+    const projectJson = await projectRes.json();
+    const projectId = projectJson.item.id as string;
+
+    const taskRes = await apiFetch("/api/tasks", token, {
+      method: "POST",
+      body: JSON.stringify({
+        title: `${prefix}Task`,
+        note: `${prefix}Note`,
+        projectId,
+        areaId: areaB,
+      }),
+    });
+    expect(taskRes.status).toBe(400);
+  });
+
   afterAll(async () => {
     try {
       const token = await getAccessToken(requireEnv("TEST_EMAIL"), requireEnv("TEST_PASSWORD"));
