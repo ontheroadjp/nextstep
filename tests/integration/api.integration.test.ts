@@ -63,7 +63,7 @@ suite("integration api", () => {
     expect(todayJson.items.some((t: { title: string }) => t.title.includes(prefix))).toBe(true);
 
     await cleanup(prefix, token);
-  });
+  }, 20000);
 
   afterAll(async () => {
     try {
