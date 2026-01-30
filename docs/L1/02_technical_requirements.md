@@ -155,6 +155,7 @@ Supabase (PostgreSQL)
 - date がない Task は DnD で並び順を保持する
 - すべての主要テーブルは `user_id` を持つ
 - sortKey は任意だが、指定する場合は空白不可（空文字は拒否）
+- `areaId` / `projectId` は存在確認を行い、他ユーザーの ID は拒否
 
 ### 代表的な API エンドポイント例
 

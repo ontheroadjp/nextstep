@@ -31,6 +31,7 @@
 - `date != null` の場合は `someday = false` に正規化する
 - `completedAt != null` のタスクは Logbook のみ表示する
 - `sortKey` は任意だが、指定する場合は空白不可（空文字は拒否）
+- `areaId` / `projectId` は存在確認を行い、他ユーザーの ID は 400
 
 ---
 

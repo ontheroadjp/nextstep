@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
+let areaExists = true;
+let projectExists = true;
+
 vi.mock("../../app/api/_helpers", async () => {
   const actual = await vi.importActual<typeof import("../../app/api/_helpers")>(
     "../../app/api/_helpers"
@@ -12,27 +15,41 @@ vi.mock("../../app/api/_helpers", async () => {
 
 vi.mock("../../app/api/_supabase", () => ({
   createServerClient: () => ({
-    from: () => ({
-      insert: () => ({
+    from: (table: string) => {
+      if (table === "tasks") {
+        return {
+          insert: () => ({
+            select: () => ({
+              single: async () => ({
+                data: {
+                  id: "t1",
+                  title: "Task",
+                  note: "Note",
+                  date: null,
+                  someday: false,
+                  completed_at: null,
+                  area_id: null,
+                  project_id: null,
+                  sort_key: null,
+                  checklists: [],
+                },
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      const exists = table === "areas" ? areaExists : projectExists;
+      return {
         select: () => ({
-          single: async () => ({
-            data: {
-              id: "t1",
-              title: "Task",
-              note: "Note",
-              date: null,
-              someday: false,
-              completed_at: null,
-              area_id: null,
-              project_id: null,
-              sort_key: null,
-              checklists: [],
-            },
-            error: null,
+          eq: () => ({
+            eq: () => ({
+              limit: async () => ({ data: exists ? [{ id: "ref1" }] : [], error: null }),
+            }),
           }),
         }),
-      }),
-    }),
+      };
+    },
   }),
 }));
 
@@ -68,5 +85,42 @@ describe("POST /api/tasks", () => {
       note: "Note",
       someday: false,
     });
+  });
+
+  it("rejects empty areaId", async () => {
+    const req = new Request("http://localhost", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "Task", note: "Note", areaId: " " }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects missing areaId reference", async () => {
+    areaExists = false;
+    const req = new Request("http://localhost", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "Task", note: "Note", areaId: "a1" }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    areaExists = true;
+  });
+
+  it("rejects missing projectId reference", async () => {
+    projectExists = false;
+    const req = new Request("http://localhost", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "Task", note: "Note", projectId: "p1" }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    projectExists = true;
   });
 });

@@ -1,6 +1,6 @@
 import { createServerClient } from "../_supabase";
 import { error, json } from "../_utils";
-import { nonEmptyString, readJson, requireUserContext } from "../_helpers";
+import { ensureOwnedReference, nonEmptyString, readJson, requireUserContext } from "../_helpers";
 
 type ProjectCreateInput = {
   name?: string;
@@ -44,8 +44,16 @@ export async function POST(request: Request): Promise<Response> {
   if (!nonEmptyString(body.note)) {
     return error("bad_request", "note is required", 400);
   }
+  if (body.areaId !== undefined && body.areaId !== null && !nonEmptyString(body.areaId)) {
+    return error("bad_request", "areaId must be non-empty", 400);
+  }
   if (body.sortKey !== undefined && body.sortKey !== null && !nonEmptyString(body.sortKey)) {
     return error("bad_request", "sortKey must be non-empty", 400);
+  }
+
+  if (body.areaId) {
+    const areaCheck = await ensureOwnedReference(supabase, userId, "areas", body.areaId, "areaId");
+    if (areaCheck) return areaCheck;
   }
 
   const { data, error: insertError } = await supabase
