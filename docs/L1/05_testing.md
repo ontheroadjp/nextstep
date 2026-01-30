@@ -69,5 +69,5 @@ TEST_PASSWORD_2=...
 #### Secrets 登録手順（GitHub）
 
 1. GitHub のリポジトリ → Settings → Environments
-2. `integration` 環境を作成し、Secrets を追加
+2. `integration` 環境を作成し、Secrets か Variables のどちらかに追加
 3. 追加後、Actions から `integration` workflow を手動実行
