@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
+let areaExists = true;
+
 vi.mock("../../app/api/_helpers", async () => {
   const actual = await vi.importActual<typeof import("../../app/api/_helpers")>(
     "../../app/api/_helpers"
@@ -12,40 +14,56 @@ vi.mock("../../app/api/_helpers", async () => {
 
 vi.mock("../../app/api/_supabase", () => ({
   createServerClient: () => ({
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          order: () => ({
-            order: async () => ({ data: [{ id: "p1", name: "P", note: "N", area_id: null, sort_key: null }], error: null }),
+    from: (table: string) => {
+      if (table === "projects") {
+        return {
+          select: () => ({
+            eq: () => ({
+              order: () => ({
+                order: async () => ({
+                  data: [{ id: "p1", name: "P", note: "N", area_id: null, sort_key: null }],
+                  error: null,
+                }),
+              }),
+            }),
           }),
-        }),
-      }),
-      insert: () => ({
-        select: () => ({
-          single: async () => ({
-            data: { id: "p1", name: "P", note: "N", area_id: null, sort_key: null },
-            error: null,
-          }),
-        }),
-      }),
-      update: () => ({
-        eq: () => ({
-          eq: () => ({
+          insert: () => ({
             select: () => ({
               single: async () => ({
-                data: { id: "p1", name: "P2", note: "N2", area_id: null, sort_key: null },
+                data: { id: "p1", name: "P", note: "N", area_id: null, sort_key: null },
                 error: null,
               }),
             }),
           }),
+          update: () => ({
+            eq: () => ({
+              eq: () => ({
+                select: () => ({
+                  single: async () => ({
+                    data: { id: "p1", name: "P2", note: "N2", area_id: null, sort_key: null },
+                    error: null,
+                  }),
+                }),
+              }),
+            }),
+          }),
+          delete: () => ({
+            eq: () => ({
+              eq: async () => ({ error: null }),
+            }),
+          }),
+        };
+      }
+      return {
+        select: () => ({
+          eq: () => ({
+            eq: () => ({
+              limit: async () => ({ data: areaExists ? [{ id: "a1" }] : [], error: null }),
+            }),
+          }),
         }),
-      }),
-      delete: () => ({
-        eq: () => ({
-          eq: async () => ({ error: null }),
-        }),
-      }),
-    }),
+      };
+    },
   }),
 }));
 
@@ -80,6 +98,18 @@ describe("Projects CRUD", () => {
     expect(res.status).toBe(400);
   });
 
+  it("POST /api/projects validates areaId reference", async () => {
+    areaExists = false;
+    const req = new Request("http://localhost", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "P", note: "N", areaId: "a1" }),
+    });
+    const res = await projectsPOST(req);
+    expect(res.status).toBe(400);
+    areaExists = true;
+  });
+
   it("POST /api/projects creates item", async () => {
     const req = new Request("http://localhost", {
       method: "POST",
@@ -90,6 +120,18 @@ describe("Projects CRUD", () => {
     expect(res.status).toBe(201);
     const json = await res.json();
     expect(json.item.id).toBe("p1");
+  });
+
+  it("PATCH /api/projects/:id validates areaId reference", async () => {
+    areaExists = false;
+    const req = new Request("http://localhost", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ areaId: "a1" }),
+    });
+    const res = await projectPATCH(req, { params: { projectId: "p1" } });
+    expect(res.status).toBe(400);
+    areaExists = true;
   });
 
   it("PATCH /api/projects/:id validates sortKey", async () => {

@@ -124,3 +124,26 @@ export function normalizeSomedayDate(input: {
   }
   return { date, someday };
 }
+
+export async function ensureOwnedReference(
+  supabase: SupabaseClient,
+  userId: string,
+  table: "areas" | "projects",
+  id: string,
+  label: "areaId" | "projectId"
+): Promise<Response | null> {
+  const { data, error: fetchError } = await supabase
+    .from(table)
+    .select("id")
+    .eq("id", id)
+    .eq("user_id", userId)
+    .limit(1);
+
+  if (fetchError) {
+    return error("internal_error", fetchError.message, 500);
+  }
+  if (!data || data.length === 0) {
+    return error("bad_request", `${label} is invalid`, 400);
+  }
+  return null;
+}

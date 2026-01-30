@@ -1,6 +1,13 @@
 import { createServerClient } from "../_supabase";
 import { error, json } from "../_utils";
-import { mapTask, nonEmptyString, normalizeSomedayDate, readJson, requireUserContext } from "../_helpers";
+import {
+  ensureOwnedReference,
+  mapTask,
+  nonEmptyString,
+  normalizeSomedayDate,
+  readJson,
+  requireUserContext,
+} from "../_helpers";
 
 type TaskCreateInput = {
   title?: string;
@@ -27,8 +34,29 @@ export async function POST(request: Request): Promise<Response> {
   if (!nonEmptyString(body.note)) {
     return error("bad_request", "note is required", 400);
   }
+  if (body.areaId !== undefined && body.areaId !== null && !nonEmptyString(body.areaId)) {
+    return error("bad_request", "areaId must be non-empty", 400);
+  }
+  if (body.projectId !== undefined && body.projectId !== null && !nonEmptyString(body.projectId)) {
+    return error("bad_request", "projectId must be non-empty", 400);
+  }
 
   const normalized = normalizeSomedayDate({ date: body.date, someday: body.someday });
+
+  if (body.areaId) {
+    const areaCheck = await ensureOwnedReference(supabase, userId, "areas", body.areaId, "areaId");
+    if (areaCheck) return areaCheck;
+  }
+  if (body.projectId) {
+    const projectCheck = await ensureOwnedReference(
+      supabase,
+      userId,
+      "projects",
+      body.projectId,
+      "projectId"
+    );
+    if (projectCheck) return projectCheck;
+  }
 
   const { data, error: insertError } = await supabase
     .from("tasks")

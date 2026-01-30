@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
+let areaExists = true;
+
 vi.mock("../../app/api/_helpers", async () => {
   const actual = await vi.importActual<typeof import("../../app/api/_helpers")>(
     "../../app/api/_helpers"
@@ -12,36 +14,49 @@ vi.mock("../../app/api/_helpers", async () => {
 
 vi.mock("../../app/api/_supabase", () => ({
   createServerClient: () => ({
-    from: () => ({
-      update: () => ({
-        eq: () => ({
-          eq: () => ({
-            select: () => ({
-              single: async () => ({
-                data: {
-                  id: "t1",
-                  title: "Task",
-                  note: "Note",
-                  date: null,
-                  someday: false,
-                  completed_at: null,
-                  area_id: null,
-                  project_id: null,
-                  sort_key: "a",
-                  checklists: [],
-                },
-                error: null,
+    from: (table: string) => {
+      if (table === "tasks") {
+        return {
+          update: () => ({
+            eq: () => ({
+              eq: () => ({
+                select: () => ({
+                  single: async () => ({
+                    data: {
+                      id: "t1",
+                      title: "Task",
+                      note: "Note",
+                      date: null,
+                      someday: false,
+                      completed_at: null,
+                      area_id: null,
+                      project_id: null,
+                      sort_key: "a",
+                      checklists: [],
+                    },
+                    error: null,
+                  }),
+                }),
               }),
             }),
           }),
+          delete: () => ({
+            eq: () => ({
+              eq: async () => ({ error: null }),
+            }),
+          }),
+        };
+      }
+      return {
+        select: () => ({
+          eq: () => ({
+            eq: () => ({
+              limit: async () => ({ data: areaExists ? [{ id: "a1" }] : [], error: null }),
+            }),
+          }),
         }),
-      }),
-      delete: () => ({
-        eq: () => ({
-          eq: async () => ({ error: null }),
-        }),
-      }),
-    }),
+      };
+    },
   }),
 }));
 
@@ -66,6 +81,18 @@ describe("Tasks PATCH/DELETE", () => {
     });
     const res = await tasksPATCH(req, { params: { id: "t1" } });
     expect(res.status).toBe(400);
+  });
+
+  it("PATCH rejects invalid areaId", async () => {
+    areaExists = false;
+    const req = new Request("http://localhost", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ areaId: "a1" }),
+    });
+    const res = await tasksPATCH(req, { params: { id: "t1" } });
+    expect(res.status).toBe(400);
+    areaExists = true;
   });
 
   it("PATCH updates item", async () => {
