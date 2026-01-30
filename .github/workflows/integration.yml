@@ -1,0 +1,35 @@
+name: integration
+
+on:
+  workflow_dispatch:
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      TEST_EMAIL: ${{ secrets.TEST_EMAIL }}
+      TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
+      TEST_EMAIL_2: ${{ secrets.TEST_EMAIL_2 }}
+      TEST_PASSWORD_2: ${{ secrets.TEST_PASSWORD_2 }}
+      BASE_URL: http://localhost:3000
+      TEST_PREFIX: "[TEST] "
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run dev -- --port 3000 --hostname 0.0.0.0 &
+      - run: |
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            if curl -sf http://localhost:3000; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Server did not start"
+          exit 1
+      - run: npm run test:integration

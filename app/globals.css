@@ -1,0 +1,53 @@
+:root {
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  font-family: "Work Sans", system-ui, -apple-system, sans-serif;
+  background: #f6f4f0;
+  color: #1c1a18;
+}
+
+main {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+}
+
+.card {
+  width: min(640px, 92vw);
+  padding: 32px;
+  border-radius: 20px;
+  background: linear-gradient(140deg, #ffffff 0%, #f2ede5 100%);
+  border: 1px solid #e6dfd5;
+  box-shadow: 0 30px 80px rgba(30, 20, 10, 0.08);
+}
+
+h1 {
+  font-size: 28px;
+  margin: 0 0 12px;
+  letter-spacing: 0.2px;
+}
+
+p {
+  margin: 0 0 16px;
+  line-height: 1.5;
+}
+
+code {
+  background: #efe7dc;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+ul {
+  margin: 12px 0 0;
+  padding-left: 18px;
+}
