@@ -56,6 +56,7 @@ TEST_PASSWORD_2=...
 - Supabase のキー・テストユーザーは GitHub Secrets に登録
 - Next.js サーバーを起動してから `npm run test:integration`
 - ワークフロー: `.github/workflows/integration.yml`
+- Integration テストはネットワーク依存のためタイムアウトは長め（20s）
 
 #### Secrets 名
 
