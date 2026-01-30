@@ -8,12 +8,12 @@ jobs:
     runs-on: ubuntu-latest
     environment: integration
     env:
-      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-      TEST_EMAIL: ${{ secrets.TEST_EMAIL }}
-      TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
-      TEST_EMAIL_2: ${{ secrets.TEST_EMAIL_2 }}
-      TEST_PASSWORD_2: ${{ secrets.TEST_PASSWORD_2 }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL || vars.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || vars.SUPABASE_ANON_KEY }}
+      TEST_EMAIL: ${{ secrets.TEST_EMAIL || vars.TEST_EMAIL }}
+      TEST_PASSWORD: ${{ secrets.TEST_PASSWORD || vars.TEST_PASSWORD }}
+      TEST_EMAIL_2: ${{ secrets.TEST_EMAIL_2 || vars.TEST_EMAIL_2 }}
+      TEST_PASSWORD_2: ${{ secrets.TEST_PASSWORD_2 || vars.TEST_PASSWORD_2 }}
       BASE_URL: http://localhost:3000
       TEST_PREFIX: "[TEST] "
     steps:
@@ -23,6 +23,9 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Check env presence
+        run: |
+          node -e "const keys=['SUPABASE_URL','SUPABASE_ANON_KEY','TEST_EMAIL','TEST_PASSWORD','TEST_EMAIL_2','TEST_PASSWORD_2']; for (const k of keys){console.log(k+': '+(process.env[k] ? 'set' : 'missing'));}"
       - run: npm run dev -- --port 3000 --hostname 0.0.0.0 &
       - run: |
           for i in 1 2 3 4 5 6 7 8 9 10; do
