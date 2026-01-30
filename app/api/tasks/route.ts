@@ -2,6 +2,7 @@ import { createServerClient } from "../_supabase";
 import { error, json } from "../_utils";
 import {
   ensureOwnedReference,
+  getProjectAreaId,
   mapTask,
   nonEmptyString,
   normalizeSomedayDate,
@@ -47,6 +48,7 @@ export async function POST(request: Request): Promise<Response> {
     const areaCheck = await ensureOwnedReference(supabase, userId, "areas", body.areaId, "areaId");
     if (areaCheck) return areaCheck;
   }
+  let resolvedAreaId = body.areaId ?? null;
   if (body.projectId) {
     const projectCheck = await ensureOwnedReference(
       supabase,
@@ -56,6 +58,13 @@ export async function POST(request: Request): Promise<Response> {
       "projectId"
     );
     if (projectCheck) return projectCheck;
+    const projectInfo = await getProjectAreaId(supabase, userId, body.projectId);
+    if (projectInfo instanceof Response) return projectInfo;
+    if (resolvedAreaId === null && projectInfo.areaId !== null) {
+      resolvedAreaId = projectInfo.areaId;
+    } else if (resolvedAreaId !== null && projectInfo.areaId !== resolvedAreaId) {
+      return error("bad_request", "areaId does not match projectId", 400);
+    }
   }
 
   const { data, error: insertError } = await supabase
@@ -66,7 +75,7 @@ export async function POST(request: Request): Promise<Response> {
       note: body.note.trim(),
       date: normalized.date ?? null,
       someday: normalized.someday ?? false,
-      area_id: body.areaId ?? null,
+      area_id: resolvedAreaId,
       project_id: body.projectId ?? null,
     })
     .select(

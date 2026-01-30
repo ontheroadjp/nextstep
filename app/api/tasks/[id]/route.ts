@@ -2,6 +2,7 @@ import { createServerClient } from "../../_supabase";
 import { error, json } from "../../_utils";
 import {
   ensureOwnedReference,
+  getProjectAreaId,
   mapTask,
   nonEmptyString,
   normalizeSomedayDate,
@@ -57,6 +58,7 @@ export async function PATCH(
     const areaCheck = await ensureOwnedReference(supabase, userId, "areas", body.areaId, "areaId");
     if (areaCheck) return areaCheck;
   }
+  let resolvedAreaId = body.areaId ?? null;
   if (body.projectId) {
     const projectCheck = await ensureOwnedReference(
       supabase,
@@ -66,6 +68,13 @@ export async function PATCH(
       "projectId"
     );
     if (projectCheck) return projectCheck;
+    const projectInfo = await getProjectAreaId(supabase, userId, body.projectId);
+    if (projectInfo instanceof Response) return projectInfo;
+    if (resolvedAreaId === null && projectInfo.areaId !== null) {
+      resolvedAreaId = projectInfo.areaId;
+    } else if (resolvedAreaId !== null && projectInfo.areaId !== resolvedAreaId) {
+      return error("bad_request", "areaId does not match projectId", 400);
+    }
   }
 
   const update: Record<string, unknown> = {};
@@ -74,7 +83,9 @@ export async function PATCH(
   if (normalized.date !== undefined) update.date = normalized.date;
   if (normalized.someday !== undefined) update.someday = normalized.someday;
   if (body.completedAt !== undefined) update.completed_at = body.completedAt;
-  if (body.areaId !== undefined) update.area_id = body.areaId;
+  if (body.areaId !== undefined || body.projectId !== undefined) {
+    update.area_id = resolvedAreaId;
+  }
   if (body.projectId !== undefined) update.project_id = body.projectId;
   if (body.sortKey !== undefined) {
     update.sort_key = body.sortKey === null ? null : body.sortKey.trim();

@@ -156,6 +156,8 @@ Supabase (PostgreSQL)
 - すべての主要テーブルは `user_id` を持つ
 - sortKey は任意だが、指定する場合は空白不可（空文字は拒否）
 - `areaId` / `projectId` は存在確認を行い、他ユーザーの ID は拒否
+- `projectId` が指定された場合、Project の `area_id` と Task の `areaId` は一致する必要がある
+- `projectId` に Area が紐づいている場合、`areaId` 未指定なら自動で補完する
 
 ### 代表的な API エンドポイント例
 
