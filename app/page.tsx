@@ -17,8 +17,13 @@ type ViewState =
   | { status: "idle" }
   | { status: "loading" }
   | { status: "error"; message: string }
-  | { status: "ready"; items: Task[] }
-  | { status: "grouped"; groups: { date: string; items: Task[] }[] };
+  | { status: "ready"; items: Task[] };
+
+type Area = {
+  id: string;
+  name: string;
+  sort_key?: string | null;
+};
 
 const DEFAULT_TZ = "540";
 
@@ -34,15 +39,34 @@ function useStoredValue(key: string, fallback: string) {
   return [value, setValue] as const;
 }
 
+function getTodayString(offsetMinutes: number) {
+  const offsetMs = offsetMinutes * 60 * 1000;
+  const now = new Date(Date.now() + offsetMs);
+  const yyyy = now.getUTCFullYear();
+  const mm = String(now.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(now.getUTCDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function splitOverdue(items: Task[], today: string) {
+  let overdue = 0;
+  let rest = 0;
+  for (const item of items) {
+    if (item.date && item.date < today) {
+      overdue += 1;
+    } else {
+      rest += 1;
+    }
+  }
+  return { overdue, rest };
+}
+
 export default function HomePage() {
   const [token, setToken] = useStoredValue("ns-access-token", "");
   const [tzOffset, setTzOffset] = useStoredValue("ns-tz-offset", DEFAULT_TZ);
   const [today, setToday] = useState<ViewState>({ status: "idle" });
-  const [upcoming, setUpcoming] = useState<ViewState>({ status: "idle" });
-  const [anytime, setAnytime] = useState<ViewState>({ status: "idle" });
-  const [someday, setSomeday] = useState<ViewState>({ status: "idle" });
-  const [logbook, setLogbook] = useState<ViewState>({ status: "idle" });
   const [inbox, setInbox] = useState<ViewState>({ status: "idle" });
+  const [areas, setAreas] = useState<ViewState>({ status: "idle" });
 
   const canFetch = token.trim().length > 0;
 
@@ -53,7 +77,7 @@ export default function HomePage() {
     return h;
   }, [token, tzOffset]);
 
-  const fetchView = async (path: string, setter: (state: ViewState) => void, grouped = false) => {
+  const fetchView = async (path: string, setter: (state: ViewState) => void) => {
     setter({ status: "loading" });
     try {
       const res = await fetch(path, { headers });
@@ -62,11 +86,7 @@ export default function HomePage() {
         setter({ status: "error", message: json?.error?.message ?? "Request failed" });
         return;
       }
-      if (grouped) {
-        setter({ status: "grouped", groups: json.groups ?? [] });
-      } else {
-        setter({ status: "ready", items: json.items ?? [] });
-      }
+      setter({ status: "ready", items: json.items ?? [] });
     } catch (err) {
       setter({ status: "error", message: err instanceof Error ? err.message : "Request failed" });
     }
@@ -75,11 +95,8 @@ export default function HomePage() {
   const refreshAll = () => {
     if (!canFetch) return;
     fetchView("/api/today", setToday);
-    fetchView("/api/upcoming", setUpcoming, true);
-    fetchView("/api/anytime", setAnytime);
-    fetchView("/api/someday", setSomeday);
-    fetchView("/api/logbook", setLogbook);
     fetchView("/api/inbox", setInbox);
+    fetchView("/api/areas", setAreas);
   };
 
   useEffect(() => {
@@ -87,15 +104,24 @@ export default function HomePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canFetch]);
 
+  const todayDate = useMemo(() => {
+    const offset = Number(tzOffset);
+    return getTodayString(Number.isFinite(offset) ? offset : 0);
+  }, [tzOffset]);
+
+  const todayCount =
+    today.status === "ready" ? splitOverdue(today.items, todayDate) : { overdue: 0, rest: 0 };
+  const inboxCount =
+    inbox.status === "ready" ? splitOverdue(inbox.items, todayDate) : { overdue: 0, rest: 0 };
+
   return (
     <main className="page">
       <div className="hero">
         <div>
           <p className="eyebrow">Nextstep</p>
-          <h1>Task views, live.</h1>
+          <h1>Daily dashboard</h1>
           <p className="lead">
-            Today / Upcoming / Anytime / Someday / Logbook / Inbox を一画面で確認。
-            テスト用アクセストークンを貼り付けて即確認できます。
+            Today と Inbox の件数だけを表示。エリアは同列に並べて確認できます。
           </p>
         </div>
         <div className="panel">
@@ -126,79 +152,70 @@ export default function HomePage() {
       </div>
 
       <section className="grid">
-        <ViewCard title="Today" state={today} />
-        <ViewCard title="Upcoming" state={upcoming} grouped />
-        <ViewCard title="Anytime" state={anytime} />
-        <ViewCard title="Someday" state={someday} />
-        <ViewCard title="Logbook" state={logbook} />
-        <ViewCard title="Inbox" state={inbox} />
+        <CategoryCard
+          title="Today"
+          href="/today"
+          status={today.status}
+          detail={`Overdue ${todayCount.overdue} / Today ${todayCount.rest}`}
+          showDetail={today.status === "ready"}
+        />
+        <CategoryCard title="Upcoming" href="/upcoming" status={today.status} />
+        <CategoryCard title="Anytime" href="/anytime" status={today.status} />
+        <CategoryCard title="Someday" href="/someday" status={today.status} />
+        <CategoryCard title="Logbook" href="/logbook" status={today.status} />
+        <CategoryCard
+          title="Inbox"
+          href="/inbox"
+          status={inbox.status}
+          detail={`Overdue ${inboxCount.overdue} / Others ${inboxCount.rest}`}
+          showDetail={inbox.status === "ready"}
+        />
+        {areas.status === "loading" && <CategoryCard title="Areas" status="loading" />}
+        {areas.status === "error" && (
+          <CategoryCard title="Areas" status="error" detail="Failed to load areas" showDetail />
+        )}
+        {areas.status === "ready" && areas.items.length === 0 && (
+          <CategoryCard title="Areas" status="ready" detail="No areas" showDetail />
+        )}
+        {areas.status === "ready" &&
+          (areas.items as Area[]).map((area) => (
+            <CategoryCard key={area.id} title={area.name} href={`/areas/${area.id}`} />
+          ))}
       </section>
     </main>
   );
 }
 
-function ViewCard({
+function CategoryCard({
   title,
-  state,
-  grouped = false,
+  href,
+  status = "ready",
+  detail,
+  showDetail = false,
 }: {
   title: string;
-  state: ViewState;
-  grouped?: boolean;
+  href?: string;
+  status?: ViewState["status"];
+  detail?: string;
+  showDetail?: boolean;
 }) {
-  return (
+  const body = (
     <div className="view-card">
       <div className="view-header">
         <h2>{title}</h2>
-        <span className="badge">
-          {state.status === "ready" ? state.items.length : ""}
-          {state.status === "grouped"
-            ? state.groups.reduce((sum, g) => sum + g.items.length, 0)
-            : ""}
-          {state.status === "loading" ? "…" : ""}
-          {state.status === "idle" ? "-" : ""}
-        </span>
+        <span className="badge">{status === "loading" ? "…" : "-"}</span>
       </div>
-      {state.status === "error" && <p className="error">{state.message}</p>}
-      {state.status === "loading" && <p className="muted">Loading...</p>}
-      {state.status === "idle" && <p className="muted">No data yet.</p>}
-      {grouped && state.status === "grouped" && (
-        <div className="group-list">
-          {state.groups.map((group) => (
-            <div key={group.date} className="group">
-              <div className="group-date">{group.date}</div>
-              {group.items.length === 0 && <p className="muted">No tasks</p>}
-              {group.items.map((item) => (
-                <TaskRow key={item.id} item={item} />
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
-      {!grouped && state.status === "ready" && (
-        <div className="task-list">
-          {state.items.length === 0 && <p className="muted">No tasks</p>}
-          {state.items.map((item) => (
-            <TaskRow key={item.id} item={item} />
-          ))}
-        </div>
-      )}
+      {status === "error" && <p className="error">{detail ?? "Failed to load"}</p>}
+      {status === "loading" && <p className="muted">Loading...</p>}
+      {status === "idle" && <p className="muted">No data yet.</p>}
+      {showDetail && status === "ready" && <p className="detail">{detail}</p>}
     </div>
   );
-}
-
-function TaskRow({ item }: { item: Task }) {
-  return (
-    <div className="task-row">
-      <div>
-        <div className="task-title">{item.title}</div>
-        <div className="task-note">{item.note}</div>
-      </div>
-      <div className="task-meta">
-        {item.someday && <span className="pill">Someday</span>}
-        {item.date && <span className="pill">{item.date}</span>}
-        {item.completedAt && <span className="pill">Done</span>}
-      </div>
-    </div>
+  return href ? (
+    <a className="card-link" href={href}>
+      {body}
+    </a>
+  ) : (
+    body
   );
 }

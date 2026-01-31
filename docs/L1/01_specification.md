@@ -189,6 +189,7 @@ Checklist はタスク内の下位項目である。
 
 ## MVP 画面順（実装優先度）
 
+0. Home（Dashboard）
 1. Today
 2. Upcoming
 3. Anytime
@@ -198,6 +199,21 @@ Checklist はタスク内の下位項目である。
 7. Inbox
 8. Project 一覧 / 詳細
 9. Area 一覧 / 詳細
+
+---
+
+## Home（Dashboard）
+
+### 表示
+
+- Today / Upcoming / Anytime / Someday / Logbook / Inbox と同列に **Area** を表示
+- カード内にタスク一覧は表示しない
+
+### 件数表示
+
+- **Today と Inbox のみ件数を表示**
+- それぞれ **期限超過（過去日付）と当日/その他** を分けて表示
+- 完了済みタスクは Logbook に入るため、Today/Inbox の件数に含めない
 
 ---
 
