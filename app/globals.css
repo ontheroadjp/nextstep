@@ -109,11 +109,11 @@ label {
 textarea,
 input {
   font-family: inherit;
-  border: 1px solid var(--border);
+  border: none;
   border-radius: 12px;
   padding: 12px 14px;
   font-size: 14px;
-  background: #fffdf9;
+  background: transparent;
   color: var(--ink);
 }
 
@@ -122,8 +122,7 @@ input {
   gap: 10px;
   padding: 12px;
   border-radius: 14px;
-  background: #faf4ec;
-  border: 1px dashed #e3d6c5;
+  background: transparent;
 }
 
 .form-row {
@@ -165,8 +164,8 @@ button {
   padding: 10px 18px;
   border-radius: 999px;
   cursor: pointer;
-  box-shadow: 0 16px 30px rgba(217, 138, 43, 0.3);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: none;
+  transition: transform 0.2s ease;
 }
 
 button:disabled {
@@ -176,7 +175,6 @@ button:disabled {
 
 button:not(:disabled):hover {
   transform: translateY(-1px);
-  box-shadow: 0 18px 36px rgba(217, 138, 43, 0.35);
 }
 
 .tiny {
@@ -189,7 +187,7 @@ button:not(:disabled):hover {
 
 .tiny.ghost {
   background: transparent;
-  border: 1px solid #e1d5c7;
+  border: none;
   color: var(--muted);
 }
 
@@ -208,10 +206,10 @@ button:not(:disabled):hover {
 
 .view-card {
   background: var(--card);
-  border: 1px solid var(--border);
+  border: none;
   border-radius: 18px;
   padding: 18px;
-  box-shadow: 0 18px 40px rgba(30, 20, 10, 0.08);
+  box-shadow: none;
   display: grid;
   gap: 12px;
 }
@@ -226,8 +224,7 @@ button:not(:disabled):hover {
 }
 
 .card-link:hover .view-card {
-  border-color: #d7c8b6;
-  box-shadow: 0 22px 50px rgba(30, 20, 10, 0.12);
+  box-shadow: none;
   transform: translateY(-2px);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
@@ -279,15 +276,14 @@ button:not(:disabled):hover {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  background: #ffffff;
-  border: 1px solid #efe4d6;
+  background: #f3ece2;
+  border: none;
   border-radius: 12px;
   padding: 10px 12px;
 }
 
 .task-row.editing {
-  background: #fff8ef;
-  border-color: #e9d7c1;
+  background: #ffffff;
 }
 
 .task-row.completed {
@@ -311,8 +307,8 @@ button:not(:disabled):hover {
   width: 18px;
   height: 18px;
   border-radius: 6px;
-  border: 1px solid #e1d5c7;
-  background: #fff;
+  border: none;
+  background: #f1e7da;
 }
 
 .task-title {
@@ -340,9 +336,26 @@ button:not(:disabled):hover {
   align-items: center;
 }
 
+.schedule {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.schedule-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.schedule-panel {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+
 .icon-button {
-  border: 1px solid #e1d5c7;
-  background: #fff;
+  border: none;
+  background: transparent;
   color: var(--muted);
   padding: 6px 8px;
   border-radius: 10px;
@@ -400,8 +413,8 @@ button:not(:disabled):hover {
   width: min(420px, 92vw);
   background: var(--card);
   border-radius: 18px;
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
+  border: none;
+  box-shadow: none;
   padding: 18px;
   display: grid;
   gap: 14px;
@@ -429,7 +442,7 @@ button:not(:disabled):hover {
   gap: 8px;
   padding: 10px 12px;
   border-radius: 12px;
-  border: 1px solid #e1d5c7;
+  border: none;
   background: #fff;
   color: var(--ink);
   font-size: 14px;
