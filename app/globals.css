@@ -168,6 +168,22 @@ button:not(:disabled):hover {
   gap: 12px;
 }
 
+.view-card.full {
+  grid-column: 1 / -1;
+}
+
+.card-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.card-link:hover .view-card {
+  border-color: #d7c8b6;
+  box-shadow: 0 22px 50px rgba(30, 20, 10, 0.12);
+  transform: translateY(-2px);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
 .view-header {
   display: flex;
   align-items: center;
@@ -185,6 +201,12 @@ button:not(:disabled):hover {
   padding: 4px 10px;
   font-size: 12px;
   color: var(--muted);
+}
+
+.detail {
+  font-size: 13px;
+  color: var(--ink);
+  margin: 0;
 }
 
 .task-list,
@@ -238,6 +260,18 @@ button:not(:disabled):hover {
   border-radius: 999px;
   background: #e8f0ec;
   color: var(--accent-2);
+}
+
+.pill-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #e8f0ec;
+  color: var(--accent-2);
+  text-decoration: none;
 }
 
 .muted {
