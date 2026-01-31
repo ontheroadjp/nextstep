@@ -32,8 +32,8 @@ export async function POST(request: Request): Promise<Response> {
   if (!nonEmptyString(body.title)) {
     return error("bad_request", "title is required", 400);
   }
-  if (!nonEmptyString(body.note)) {
-    return error("bad_request", "note is required", 400);
+  if (body.note !== undefined && typeof body.note !== "string") {
+    return error("bad_request", "note must be string", 400);
   }
   if (body.areaId !== undefined && body.areaId !== null && !nonEmptyString(body.areaId)) {
     return error("bad_request", "areaId must be non-empty", 400);
@@ -72,14 +72,14 @@ export async function POST(request: Request): Promise<Response> {
     .insert({
       user_id: userId,
       title: body.title.trim(),
-      note: body.note.trim(),
+      note: body.note?.trim() ?? "",
       date: normalized.date ?? null,
       someday: normalized.someday ?? false,
       area_id: resolvedAreaId,
       project_id: body.projectId ?? null,
     })
     .select(
-      "id,title,note,date,someday,completed_at,area_id,project_id,sort_key,checklists(id,title,completed,sort_key)"
+      "id,title,note,date,someday,completed_at,archived_at,area_id,project_id,sort_key,checklists(id,title,completed,sort_key)"
     )
     .single();
 

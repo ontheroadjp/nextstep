@@ -123,9 +123,9 @@ Supabase (PostgreSQL)
 
 #### 制約・インデックス（重要）
 
-- 文字列必須: `areas.name`, `projects.name`, `projects.note`, `tasks.title`, `tasks.note`, `checklists.title`
+- 文字列必須: `areas.name`, `projects.name`, `projects.note`, `tasks.title`, `checklists.title`
 - Someday/Date の整合性: `someday = true` なら `date = null`、`date != null` なら `someday = false`
-- 主要インデックス: `tasks(user_id, date)`, `tasks(user_id, completed_at desc)`（Logbook 最適化）
+- 主要インデックス: `tasks(user_id, date)`, `tasks(user_id, archived_at desc)`（Logbook 最適化）
 
 ---
 
@@ -146,7 +146,8 @@ Supabase (PostgreSQL)
 
 ## データモデル前提
 
-- Task / Project の note は必須
+- Task の note は任意
+- Project の note は必須
 - Task は任意で Project に所属できる
 - Project は任意で Area に所属できる
 - Checklist は Task に複数ぶら下がる
@@ -193,6 +194,7 @@ DELETE /api/tasks/{id}
 ```
 
 - 完了処理は completedAt を設定することで表現する
+- Logbook への整理は archivedAt を設定することで表現する
 - 状態（active / inactive）は持たない
 
 ---
@@ -202,11 +204,11 @@ DELETE /api/tasks/{id}
 ### 共通方針
 
 - 日付は `YYYY-MM-DD`
-- `note` は必須
+- `note` は任意（空でも可）
 - `someday = true` の場合は `date = null`
 - `date != null` の場合は `someday = false`
 - API 側で入力の正規化を行い、矛盾は自動で解消する
-- `completedAt != null` は Logbook 以外に出さない
+- `archivedAt != null` は Logbook のみに出す
 
 ### Task の基本形
 
@@ -218,6 +220,7 @@ DELETE /api/tasks/{id}
   "date": "YYYY-MM-DD" | null,
   "someday": false,
   "completedAt": "YYYY-MM-DDTHH:MM:SSZ" | null,
+  "archivedAt": "YYYY-MM-DDTHH:MM:SSZ" | null,
   "areaId": "area_..." | null,
   "projectId": "project_..." | null,
   "sortKey": "string" | null,
@@ -284,7 +287,7 @@ POST /api/tasks
 
 ルール
 
-- `note` は必須
+- `note` は任意（空でも可）
 - `someday = true` の場合は `date = null`
 - `date != null` の場合は `someday = false`
 
@@ -303,6 +306,7 @@ PATCH /api/tasks/{id}
   "date": "YYYY-MM-DD" | null,
   "someday": false,
   "completedAt": "YYYY-MM-DDTHH:MM:SSZ" | null,
+  "archivedAt": "YYYY-MM-DDTHH:MM:SSZ" | null,
   "areaId": "area_..." | null,
   "projectId": "project_..." | null,
   "sortKey": "string" | null
@@ -360,8 +364,8 @@ DELETE /api/checklists/{id}
 
 ## Logbook
 
-- `completedAt != null` のタスクのみを返す
-- `completedAt` の降順で並べる
+- `archivedAt != null` のタスクのみを返す
+- `archivedAt` の降順で並べる
 
 ---
 
@@ -373,7 +377,7 @@ DELETE /api/checklists/{id}
 
 ```
 where user_id = :userId
-  and completed_at is null
+  and archived_at is null
   and someday = false
   and date is not null
   and date <= :today
@@ -383,7 +387,7 @@ where user_id = :userId
 
 ```
 where user_id = :userId
-  and completed_at is null
+  and archived_at is null
   and someday = false
   and date is not null
   and date > :today
@@ -393,7 +397,7 @@ where user_id = :userId
 
 ```
 where user_id = :userId
-  and completed_at is null
+  and archived_at is null
   and someday = false
   and date is null
 ```
@@ -402,7 +406,7 @@ where user_id = :userId
 
 ```
 where user_id = :userId
-  and completed_at is null
+  and archived_at is null
   and someday = true
 ```
 
@@ -410,8 +414,8 @@ where user_id = :userId
 
 ```
 where user_id = :userId
-  and completed_at is not null
-order by completed_at desc
+  and archived_at is not null
+order by archived_at desc
 ```
 
 ### Inbox

@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export function baseTaskSelect() {
-  return "id,title,note,date,someday,completed_at,area_id,project_id,sort_key,checklists(id,title,completed,sort_key)";
+  return "id,title,note,date,someday,completed_at,archived_at,area_id,project_id,sort_key,checklists(id,title,completed,sort_key)";
 }
 
 export async function fetchToday(
@@ -14,7 +14,7 @@ export async function fetchToday(
     .from("tasks")
     .select(baseTaskSelect())
     .eq("user_id", userId)
-    .is("completed_at", null)
+    .is("archived_at", null)
     .eq("someday", false)
     .not("date", "is", null)
     .lte("date", today)
@@ -38,7 +38,7 @@ export async function fetchUpcoming(
     .from("tasks")
     .select(baseTaskSelect())
     .eq("user_id", userId)
-    .is("completed_at", null)
+    .is("archived_at", null)
     .eq("someday", false)
     .not("date", "is", null)
     .gt("date", today)
@@ -61,7 +61,7 @@ export async function fetchAnytime(
     .from("tasks")
     .select(baseTaskSelect())
     .eq("user_id", userId)
-    .is("completed_at", null)
+    .is("archived_at", null)
     .eq("someday", false)
     .is("date", null)
     .order("sort_key", { ascending: true, nullsFirst: false })
@@ -82,7 +82,7 @@ export async function fetchSomeday(
     .from("tasks")
     .select(baseTaskSelect())
     .eq("user_id", userId)
-    .is("completed_at", null)
+    .is("archived_at", null)
     .eq("someday", true)
     .order("sort_key", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: true });
@@ -102,8 +102,8 @@ export async function fetchLogbook(
     .from("tasks")
     .select(baseTaskSelect())
     .eq("user_id", userId)
-    .not("completed_at", "is", null)
-    .order("completed_at", { ascending: false });
+    .not("archived_at", "is", null)
+    .order("archived_at", { ascending: false });
 
   if (filters.areaId) query = query.eq("area_id", filters.areaId);
   if (filters.projectId) query = query.eq("project_id", filters.projectId);
@@ -116,7 +116,7 @@ export async function fetchInbox(supabase: SupabaseClient, userId: string) {
     .from("tasks")
     .select(baseTaskSelect())
     .eq("user_id", userId)
-    .is("completed_at", null)
+    .is("archived_at", null)
     .is("area_id", null)
     .order("created_at", { ascending: false });
 }

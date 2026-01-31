@@ -10,8 +10,16 @@ type Task = {
   date: string | null;
   someday: boolean;
   completedAt: string | null;
+  archivedAt: string | null;
   areaId: string | null;
   projectId: string | null;
+};
+
+type Draft = {
+  title: string;
+  note: string;
+  date: string;
+  someday: boolean;
 };
 
 type ViewState =
@@ -35,9 +43,7 @@ function useStoredValue(key: string, fallback: string) {
   return [value, setValue] as const;
 }
 
-function buildToday(offset: string) {
-  const parsed = Number(offset);
-  const offsetMinutes = Number.isFinite(parsed) ? parsed : 0;
+function getTodayString(offsetMinutes: number) {
   const offsetMs = offsetMinutes * 60 * 1000;
   const now = new Date(Date.now() + offsetMs);
   const yyyy = now.getUTCFullYear();
@@ -52,17 +58,12 @@ export default function ViewPage() {
   const [token, setToken] = useStoredValue("ns-access-token", "");
   const [tzOffset, setTzOffset] = useStoredValue("ns-tz-offset", DEFAULT_TZ);
   const [state, setState] = useState<ViewState>({ status: "idle" });
-  const [form, setForm] = useState({
-    title: "",
-    note: "",
-    date: "",
-    someday: false,
-    areaId: "",
-    projectId: "",
-  });
+  const [draft, setDraft] = useState<Draft | null>(null);
   const [formMessage, setFormMessage] = useState<string | null>(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const canFetch = token.trim().length > 0 && ALLOWED_VIEWS.has(view);
+  const isLogbook = view === "logbook";
 
   const headers = useMemo(() => {
     const h = new Headers();
@@ -70,6 +71,11 @@ export default function ViewPage() {
     if (tzOffset.trim()) h.set("x-tz-offset-minutes", tzOffset.trim());
     return h;
   }, [token, tzOffset]);
+
+  const today = useMemo(() => {
+    const offset = Number(tzOffset);
+    return getTodayString(Number.isFinite(offset) ? offset : 0);
+  }, [tzOffset]);
 
   const fetchView = async () => {
     if (!canFetch) return;
@@ -92,17 +98,29 @@ export default function ViewPage() {
     }
   };
 
-  const handleCreate = async () => {
-    if (!token.trim()) return;
+  const openDraft = () => {
+    if (draft) return;
+    let initialDate = "";
+    let initialSomeday = false;
+    if (view === "today") initialDate = today;
+    if (view === "someday") initialSomeday = true;
+    setDraft({ title: "", note: "", date: initialDate, someday: initialSomeday });
+    setFormMessage(null);
+  };
+
+  const saveDraft = async () => {
+    if (!draft || !token.trim()) return;
+    if (!draft.title.trim()) {
+      setFormMessage("title is required");
+      return;
+    }
     setFormMessage(null);
     const payload: Record<string, unknown> = {
-      title: form.title,
-      note: form.note,
-      date: form.someday ? null : form.date || null,
-      someday: form.someday,
+      title: draft.title,
+      note: draft.note,
+      date: draft.someday ? null : draft.date || null,
+      someday: draft.someday,
     };
-    if (form.areaId.trim()) payload.areaId = form.areaId.trim();
-    if (form.projectId.trim()) payload.projectId = form.projectId.trim();
     try {
       const res = await fetch("/api/tasks", {
         method: "POST",
@@ -114,15 +132,15 @@ export default function ViewPage() {
         setFormMessage(json?.error?.message ?? "Failed to create");
         return;
       }
-      setForm({ title: "", note: "", date: "", someday: false, areaId: "", projectId: "" });
+      setDraft(null);
       fetchView();
     } catch (err) {
       setFormMessage(err instanceof Error ? err.message : "Failed to create");
     }
   };
 
-  const handleComplete = async (task: Task) => {
-    if (!token.trim()) return;
+  const toggleComplete = async (task: Task) => {
+    if (!token.trim() || isLogbook) return;
     try {
       await fetch(`/api/tasks/${task.id}`, {
         method: "PATCH",
@@ -133,6 +151,20 @@ export default function ViewPage() {
     } catch {
       // ignore
     }
+  };
+
+  const archiveCompleted = async () => {
+    if (!token.trim() || state.status !== "ready") return;
+    const targets = state.items.filter((t) => t.completedAt && !t.archivedAt);
+    if (targets.length === 0) return;
+    for (const task of targets) {
+      await fetch(`/api/tasks/${task.id}`, {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ archivedAt: new Date().toISOString() }),
+      });
+    }
+    fetchView();
   };
 
   const handleDelete = async (task: Task) => {
@@ -163,6 +195,11 @@ export default function ViewPage() {
       </main>
     );
   }
+
+  const completedCount =
+    state.status === "ready"
+      ? state.items.filter((t) => t.completedAt && !t.archivedAt).length
+      : 0;
 
   return (
     <main className="page">
@@ -207,54 +244,57 @@ export default function ViewPage() {
               {state.status === "ready" ? state.items.length : state.status === "loading" ? "…" : "-"}
             </span>
           </div>
-          <div className="form">
-            <div className="form-row">
-              <input
-                value={form.title}
-                onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-                placeholder="Title"
-              />
-              <input
-                value={form.note}
-                onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))}
-                placeholder="Note"
-              />
-            </div>
-            <div className="form-row">
-              <input
-                value={form.date}
-                onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
-                placeholder={`Date (YYYY-MM-DD) e.g. ${buildToday(tzOffset)}`}
-                disabled={form.someday}
-              />
-              <label className="checkbox">
-                <input
-                  type="checkbox"
-                  checked={form.someday}
-                  onChange={(e) => setForm((prev) => ({ ...prev, someday: e.target.checked }))}
-                />
-                Someday
-              </label>
-            </div>
-            <div className="form-row">
-              <input
-                value={form.areaId}
-                onChange={(e) => setForm((prev) => ({ ...prev, areaId: e.target.value }))}
-                placeholder="Area ID (optional)"
-              />
-              <input
-                value={form.projectId}
-                onChange={(e) => setForm((prev) => ({ ...prev, projectId: e.target.value }))}
-                placeholder="Project ID (optional)"
-              />
-            </div>
-            <div className="actions">
-              <button onClick={handleCreate} disabled={!token.trim()}>
+          <div className="toolbar">
+            {!isLogbook && (
+              <button className="tiny" onClick={openDraft}>
                 Add task
               </button>
-              {formMessage && <span className="error">{formMessage}</span>}
-            </div>
+            )}
+            {!isLogbook && completedCount > 0 && (
+              <button className="tiny ghost" onClick={archiveCompleted}>
+                Logbook へ整理
+              </button>
+            )}
           </div>
+          {draft && (
+            <div className="task-row editing">
+              <div className="task-main">
+                <div className="task-title-row">
+                  <span className="checkbox-shell" aria-hidden />
+                  <input
+                    className="title-input"
+                    value={draft.title}
+                    onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+                    placeholder="Title"
+                  />
+                </div>
+                <textarea
+                  className="note-input"
+                  value={draft.note}
+                  onChange={(e) => setDraft({ ...draft, note: e.target.value })}
+                  placeholder="Note (optional)"
+                  rows={3}
+                />
+                <div className="icon-row">
+                  <button className="icon-button" onClick={() => setCalendarOpen(true)}>
+                    <CalendarIcon />
+                  </button>
+                  <button className="icon-button" disabled>
+                    <ChecklistIcon />
+                  </button>
+                </div>
+                <div className="row-actions">
+                  <button className="tiny" onClick={saveDraft}>
+                    Save
+                  </button>
+                  <button className="tiny ghost" onClick={() => setDraft(null)}>
+                    Cancel
+                  </button>
+                  {formMessage && <span className="error">{formMessage}</span>}
+                </div>
+              </div>
+            </div>
+          )}
           {state.status === "error" && <p className="error">{state.message}</p>}
           {state.status === "loading" && <p className="muted">Loading...</p>}
           {state.status === "idle" && <p className="muted">No data yet.</p>}
@@ -262,19 +302,28 @@ export default function ViewPage() {
             <div className="task-list">
               {state.items.length === 0 && <p className="muted">No tasks</p>}
               {state.items.map((item) => (
-                <div key={item.id} className="task-row">
-                  <div>
-                    <div className="task-title">{item.title}</div>
-                    <div className="task-note">{item.note}</div>
+                <div key={item.id} className={`task-row ${item.completedAt ? "completed" : ""}`}>
+                  <div className="task-main">
+                    <div className="task-title-row">
+                      <label className="checkbox">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(item.completedAt)}
+                          onChange={() => toggleComplete(item)}
+                          disabled={isLogbook}
+                        />
+                      </label>
+                      <div>
+                        <div className="task-title">{item.title}</div>
+                        {item.note && <div className="task-note">{item.note}</div>}
+                      </div>
+                    </div>
                   </div>
                   <div className="task-meta">
                     {item.someday && <span className="pill">Someday</span>}
                     {item.date && <span className="pill">{item.date}</span>}
                     {item.completedAt && <span className="pill">Done</span>}
                     <div className="row-actions">
-                      <button className="tiny" onClick={() => handleComplete(item)}>
-                        {item.completedAt ? "Undo" : "Done"}
-                      </button>
                       <button className="tiny ghost" onClick={() => handleDelete(item)}>
                         Delete
                       </button>
@@ -286,6 +335,115 @@ export default function ViewPage() {
           )}
         </div>
       </section>
+
+      {calendarOpen && draft && (
+        <div className="modal-backdrop" onClick={() => setCalendarOpen(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Schedule</h3>
+              <button className="tiny ghost" onClick={() => setCalendarOpen(false)}>
+                Close
+              </button>
+            </div>
+            <div className="modal-body">
+              <button
+                className="modal-button"
+                onClick={() => {
+                  setDraft({ ...draft, date: today, someday: false });
+                  setCalendarOpen(false);
+                }}
+              >
+                <CalendarIcon />
+                Today
+              </button>
+              <button
+                className="modal-button"
+                onClick={() => {
+                  setDraft({ ...draft, date: today, someday: false });
+                  setCalendarOpen(false);
+                }}
+              >
+                <MoonIcon />
+                This Evening
+              </button>
+              <label className="modal-input">
+                <span>Date</span>
+                <input
+                  type="date"
+                  value={draft.date}
+                  onChange={(e) => setDraft({ ...draft, date: e.target.value, someday: false })}
+                />
+              </label>
+              <button
+                className="modal-button ghost"
+                onClick={() => {
+                  setDraft({ ...draft, date: "", someday: true });
+                  setCalendarOpen(false);
+                }}
+              >
+                <SparkIcon />
+                Someday
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
+  );
+}
+
+function CalendarIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M7 3v3M17 3v3M4 9h16M5 6h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function ChecklistIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="m4 7 2 2 4-4M4 15 6 17 10 13M14 7h6M14 15h6"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function MoonIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M21 14.5A8.5 8.5 0 1 1 9.5 3a7 7 0 1 0 11.5 11.5Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function SparkIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M12 2v6m0 8v6M2 12h6m8 0h6M5 5l4 4m6 6 4 4M19 5l-4 4m-6 6-4 4"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }

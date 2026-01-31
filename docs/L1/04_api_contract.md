@@ -29,7 +29,8 @@
 
 - `someday = true` の場合は `date = null` に正規化する
 - `date != null` の場合は `someday = false` に正規化する
-- `completedAt != null` のタスクは Logbook のみ表示する
+- `archivedAt != null` のタスクは Logbook のみ表示する
+- `note` は任意（空でも可）
 - `sortKey` は任意だが、指定する場合は空白不可（空文字は拒否）
 - `areaId` / `projectId` は存在確認を行い、他ユーザーの ID は 400
 - `projectId` がある場合、`areaId` は Project の `area_id` と一致必須
@@ -101,6 +102,7 @@
   "date": "YYYY-MM-DD" | null,
   "someday": false,
   "completedAt": "YYYY-MM-DDTHH:MM:SSZ" | null,
+  "archivedAt": "YYYY-MM-DDTHH:MM:SSZ" | null,
   "areaId": "area_..." | null,
   "projectId": "project_..." | null,
   "sortKey": "string" | null
@@ -295,6 +297,7 @@
   "date": "YYYY-MM-DD" | null,
   "someday": false,
   "completedAt": "YYYY-MM-DDTHH:MM:SSZ" | null,
+  "archivedAt": "YYYY-MM-DDTHH:MM:SSZ" | null,
   "areaId": "area_..." | null,
   "projectId": "project_..." | null,
   "sortKey": "string" | null,

@@ -228,6 +228,12 @@ except Exception:
       -H "Content-Type: application/json" \
       -d '{"completedAt":"2026-01-30T00:00:00Z"}'
 
+  run "Archive task" \
+    curl_cmd -X PATCH "$base_url/api/tasks/$TASK_ID" \
+      "${header_auth[@]}" \
+      -H "Content-Type: application/json" \
+      -d '{"archivedAt":"2026-01-30T00:00:00Z"}'
+
   run "Logbook" \
     curl_cmd "$base_url/api/logbook" \
       "${header_auth[@]}"

@@ -151,6 +151,12 @@ input {
   gap: 12px;
 }
 
+.toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
 button {
   border: none;
   background: var(--accent);
@@ -279,6 +285,36 @@ button:not(:disabled):hover {
   padding: 10px 12px;
 }
 
+.task-row.editing {
+  background: #fff8ef;
+  border-color: #e9d7c1;
+}
+
+.task-row.completed {
+  opacity: 0.75;
+}
+
+.task-main {
+  flex: 1;
+  display: grid;
+  gap: 6px;
+}
+
+.task-title-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.checkbox-shell {
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  border: 1px solid #e1d5c7;
+  background: #fff;
+}
+
 .task-title {
   font-weight: 600;
   margin-bottom: 4px;
@@ -287,6 +323,35 @@ button:not(:disabled):hover {
 .task-note {
   font-size: 12px;
   color: var(--muted);
+}
+
+.title-input,
+.note-input {
+  width: 100%;
+}
+
+.note-input {
+  resize: vertical;
+}
+
+.icon-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.icon-button {
+  border: 1px solid #e1d5c7;
+  background: #fff;
+  color: var(--muted);
+  padding: 6px 8px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.icon-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .task-meta {
@@ -319,6 +384,67 @@ button:not(:disabled):hover {
   background: #e8f0ec;
   color: var(--accent-2);
   text-decoration: none;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 12, 8, 0.4);
+  display: grid;
+  place-items: center;
+  z-index: 10;
+  padding: 20px;
+}
+
+.modal {
+  width: min(420px, 92vw);
+  background: var(--card);
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  padding: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.modal-body {
+  display: grid;
+  gap: 10px;
+}
+
+.modal-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e1d5c7;
+  background: #fff;
+  color: var(--ink);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.modal-button.ghost {
+  background: #f7f1e8;
+}
+
+.modal-input {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
 }
 
 .muted {
