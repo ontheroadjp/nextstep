@@ -29,6 +29,13 @@ curl -s -X PATCH "$base_url/api/tasks/$TASK_ID" \
 
 echo ""
 
+curl -s -X PATCH "$base_url/api/tasks/$TASK_ID" \
+  -H "x-access-token: $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"archivedAt":"2026-01-30T00:00:00Z"}' | cat
+
+echo ""
+
 curl -s "$base_url/api/logbook" \
   -H "x-access-token: $TOKEN" | cat
 

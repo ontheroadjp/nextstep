@@ -104,7 +104,7 @@ run "Missing title" \
     -H "Content-Type: application/json" \
     -d '{"note":"note"}'
 
-run "Blank note" \
+run "Blank note allowed" \
   curl -s -X POST "$base_url/api/tasks" \
     "${header_auth[@]}" \
     -H "Content-Type: application/json" \

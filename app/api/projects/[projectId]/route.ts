@@ -36,6 +36,7 @@ export async function GET(
     .select(baseTaskSelect())
     .eq("user_id", userId)
     .eq("project_id", params.projectId)
+    .is("archived_at", null)
     .order("date", { ascending: true })
     .order("sort_key", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: true });

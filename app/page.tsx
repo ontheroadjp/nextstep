@@ -9,6 +9,7 @@ type Task = {
   date: string | null;
   someday: boolean;
   completedAt: string | null;
+  archivedAt: string | null;
   areaId: string | null;
   projectId: string | null;
 };
@@ -52,6 +53,7 @@ function splitOverdue(items: Task[], today: string) {
   let overdue = 0;
   let rest = 0;
   for (const item of items) {
+    if (item.completedAt) continue;
     if (item.date && item.date < today) {
       overdue += 1;
     } else {

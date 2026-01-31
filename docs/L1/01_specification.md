@@ -80,7 +80,7 @@ Checklist はタスク内の下位項目である。
 ### タスク追加
 
 - 追加時は Inbox / Anytime に入る（date 未設定、Someday なし）
-- 必須入力は title と note
+- 必須入力は title（note は任意）
 
 ### 日付設定
 
@@ -90,8 +90,8 @@ Checklist はタスク内の下位項目である。
 
 ### 完了
 
-- 完了すると completedAt が設定され、Logbook に移動する
-- 完了タスクは Today / Upcoming / Anytime / Someday には表示しない
+- 完了すると completedAt が設定されるが、Logbook へは自動で移動しない
+- 「Logbook へ整理」を押すと archivedAt が設定され、Logbook に移動する
 
 ### 並び替え
 
@@ -103,23 +103,23 @@ Checklist はタスク内の下位項目である。
 
 ### Today
 
-- date が今日または過去日付の未完了タスクを表示する
+- date が今日または過去日付のタスクを表示する（未整理の完了タスクも含む）
 - date 昇順で並ぶ（過去日付が先）
 
 ### Upcoming
 
-- date が未来日付の未完了タスクを表示する
+- date が未来日付のタスクを表示する（未整理の完了タスクも含む）
 - 日付ごとにグルーピングする
 - 日付グループ内は date 昇順
 
 ### Anytime
 
-- date が未設定の未完了タスクを表示する
+- date が未設定のタスクを表示する（未整理の完了タスクも含む）
 - ドラッグ＆ドロップ順で表示する
 
 ### Someday
 
-- Someday が true の未完了タスクを表示する
+- Someday が true のタスクを表示する（未整理の完了タスクも含む）
 - date は常に未設定
 
 ### Inbox
@@ -141,8 +141,8 @@ Checklist はタスク内の下位項目である。
 
 ### Logbook
 
-- completedAt が設定されたタスクを表示する
-- completedAt 降順で表示する
+- archivedAt が設定されたタスクを表示する
+- archivedAt 降順で表示する
 
 ---
 
@@ -166,7 +166,8 @@ Checklist はタスク内の下位項目である。
 ## 入力・バリデーション
 
 - Task / Project の title は必須
-- Task / Project の note は必須
+- Task の note は任意（空でも可）
+- Project の note は必須
 - 空文字や空白のみの入力は無効
 
 ---

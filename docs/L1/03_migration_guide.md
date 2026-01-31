@@ -44,3 +44,15 @@ update projects set sort_key = null where trim(coalesce(sort_key, '')) = '';
 update tasks set sort_key = null where trim(coalesce(sort_key, '')) = '';
 update checklists set sort_key = null where trim(coalesce(sort_key, '')) = '';
 ```
+
+---
+
+### 完了/整理フローの追加（archived_at）
+
+- ファイル: `db/maintenance/0003_archive_flow.sql`
+- 目的: `archived_at` 追加と `tasks_note_not_blank` の削除
+
+#### 注意
+
+- `archived_at` は「Logbook へ整理」時にのみセットされる
+- `completed_at` が null のまま `archived_at` をセットすると制約で失敗する

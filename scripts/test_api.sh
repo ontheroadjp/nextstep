@@ -102,6 +102,12 @@ if [[ -n "$TASK_ID" ]]; then
       -H "Content-Type: application/json" \
       -d '{"completedAt":"2026-01-30T00:00:00Z"}'
 
+  run "Archive one task" \
+    curl -s -X PATCH "$base_url/api/tasks/$TASK_ID" \
+      "${header_auth[@]}" \
+      -H "Content-Type: application/json" \
+      -d '{"archivedAt":"2026-01-30T00:00:00Z"}'
+
   run "Logbook" \
     curl -s "$base_url/api/logbook" \
       "${header_auth[@]}"
