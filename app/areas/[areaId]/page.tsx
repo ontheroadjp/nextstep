@@ -38,6 +38,14 @@ export default function AreaPage() {
   const [token, setToken] = useStoredValue("ns-access-token", "");
   const [tzOffset, setTzOffset] = useStoredValue("ns-tz-offset", DEFAULT_TZ);
   const [state, setState] = useState<AreaState>({ status: "idle" });
+  const [form, setForm] = useState({
+    title: "",
+    note: "",
+    date: "",
+    someday: false,
+    projectId: "",
+  });
+  const [formMessage, setFormMessage] = useState<string | null>(null);
 
   const canFetch = token.trim().length > 0 && areaId.length > 0;
 
@@ -66,6 +74,59 @@ export default function AreaPage() {
       });
     } catch (err) {
       setState({ status: "error", message: err instanceof Error ? err.message : "Request failed" });
+    }
+  };
+
+  const handleCreate = async () => {
+    if (!token.trim()) return;
+    setFormMessage(null);
+    const payload: Record<string, unknown> = {
+      title: form.title,
+      note: form.note,
+      date: form.someday ? null : form.date || null,
+      someday: form.someday,
+      areaId,
+    };
+    if (form.projectId.trim()) payload.projectId = form.projectId.trim();
+    try {
+      const res = await fetch("/api/tasks", {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setFormMessage(json?.error?.message ?? "Failed to create");
+        return;
+      }
+      setForm({ title: "", note: "", date: "", someday: false, projectId: "" });
+      fetchArea();
+    } catch (err) {
+      setFormMessage(err instanceof Error ? err.message : "Failed to create");
+    }
+  };
+
+  const handleComplete = async (task: Task) => {
+    if (!token.trim()) return;
+    try {
+      await fetch(`/api/tasks/${task.id}`, {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ completedAt: task.completedAt ? null : new Date().toISOString() }),
+      });
+      fetchArea();
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleDelete = async (task: Task) => {
+    if (!token.trim()) return;
+    try {
+      await fetch(`/api/tasks/${task.id}`, { method: "DELETE", headers });
+      fetchArea();
+    } catch {
+      // ignore
     }
   };
 
@@ -117,6 +178,49 @@ export default function AreaPage() {
               {state.status === "ready" ? state.tasks.length : state.status === "loading" ? "…" : "-"}
             </span>
           </div>
+          <div className="form">
+            <div className="form-row">
+              <input
+                value={form.title}
+                onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
+                placeholder="Title"
+              />
+              <input
+                value={form.note}
+                onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))}
+                placeholder="Note"
+              />
+            </div>
+            <div className="form-row">
+              <input
+                value={form.date}
+                onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
+                placeholder="Date (YYYY-MM-DD)"
+                disabled={form.someday}
+              />
+              <label className="checkbox">
+                <input
+                  type="checkbox"
+                  checked={form.someday}
+                  onChange={(e) => setForm((prev) => ({ ...prev, someday: e.target.checked }))}
+                />
+                Someday
+              </label>
+            </div>
+            <div className="form-row">
+              <input
+                value={form.projectId}
+                onChange={(e) => setForm((prev) => ({ ...prev, projectId: e.target.value }))}
+                placeholder="Project ID (optional)"
+              />
+            </div>
+            <div className="actions">
+              <button onClick={handleCreate} disabled={!token.trim()}>
+                Add task
+              </button>
+              {formMessage && <span className="error">{formMessage}</span>}
+            </div>
+          </div>
           {state.status === "error" && <p className="error">{state.message}</p>}
           {state.status === "loading" && <p className="muted">Loading...</p>}
           {state.status === "idle" && <p className="muted">No data yet.</p>}
@@ -133,6 +237,14 @@ export default function AreaPage() {
                     {item.someday && <span className="pill">Someday</span>}
                     {item.date && <span className="pill">{item.date}</span>}
                     {item.completedAt && <span className="pill">Done</span>}
+                    <div className="row-actions">
+                      <button className="tiny" onClick={() => handleComplete(item)}>
+                        {item.completedAt ? "Undo" : "Done"}
+                      </button>
+                      <button className="tiny ghost" onClick={() => handleDelete(item)}>
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
