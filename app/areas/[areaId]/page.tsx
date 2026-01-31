@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 
 type Task = {
@@ -50,6 +50,13 @@ function getTodayString(offsetMinutes: number) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+function getDateLabel(draft: Draft, today: string) {
+  if (draft.someday) return "Someday";
+  if (!draft.date) return "";
+  if (draft.date === today) return "Today";
+  return draft.date;
+}
+
 export default function AreaPage() {
   const params = useParams();
   const areaId = String(params.areaId ?? "");
@@ -58,7 +65,8 @@ export default function AreaPage() {
   const [state, setState] = useState<AreaState>({ status: "idle" });
   const [draft, setDraft] = useState<Draft | null>(null);
   const [formMessage, setFormMessage] = useState<string | null>(null);
-  const [calendarOpen, setCalendarOpen] = useState(false);
+  const saveTimer = useRef<number | null>(null);
+  const savingRef = useRef(false);
 
   const canFetch = token.trim().length > 0 && areaId.length > 0;
 
@@ -102,11 +110,12 @@ export default function AreaPage() {
   };
 
   const saveDraft = async () => {
-    if (!draft || !token.trim()) return;
+    if (!draft || savingRef.current || !token.trim()) return;
     if (!draft.title.trim()) {
       setFormMessage("title is required");
       return;
     }
+    savingRef.current = true;
     setFormMessage(null);
     const payload: Record<string, unknown> = {
       title: draft.title,
@@ -125,11 +134,14 @@ export default function AreaPage() {
       const json = await res.json();
       if (!res.ok) {
         setFormMessage(json?.error?.message ?? "Failed to create");
+        savingRef.current = false;
         return;
       }
       setDraft(null);
+      savingRef.current = false;
       fetchArea();
     } catch (err) {
+      savingRef.current = false;
       setFormMessage(err instanceof Error ? err.message : "Failed to create");
     }
   };
@@ -176,6 +188,18 @@ export default function AreaPage() {
     if (canFetch) fetchArea();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canFetch, areaId]);
+
+  useEffect(() => {
+    if (!draft) return;
+    if (saveTimer.current) window.clearTimeout(saveTimer.current);
+    saveTimer.current = window.setTimeout(() => {
+      saveDraft();
+    }, 600);
+    return () => {
+      if (saveTimer.current) window.clearTimeout(saveTimer.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft?.title, draft?.note, draft?.date, draft?.someday, draft?.projectId]);
 
   const completedCount =
     state.status === "ready"
@@ -254,12 +278,50 @@ export default function AreaPage() {
                   placeholder="Note (optional)"
                   rows={3}
                 />
-                <div className="icon-row">
-                  <button className="icon-button" onClick={() => setCalendarOpen(true)}>
-                    <CalendarIcon />
+                <div className="schedule">
+                  <div className="schedule-label">{getDateLabel(draft, today)}</div>
+                  <div className="icon-row">
+                    {!getDateLabel(draft, today) && (
+                      <button className="icon-button" onClick={() => setDraft({ ...draft })}>
+                        <CalendarIcon />
+                      </button>
+                    )}
+                    <button className="icon-button" disabled>
+                      <ChecklistIcon />
+                    </button>
+                  </div>
+                </div>
+                <div className="schedule-panel">
+                  <button
+                    className="pill ghost"
+                    onClick={() => setDraft({ ...draft, date: today, someday: false })}
+                  >
+                    Today
                   </button>
-                  <button className="icon-button" disabled>
-                    <ChecklistIcon />
+                  <button
+                    className="pill ghost"
+                    onClick={() => setDraft({ ...draft, date: today, someday: false })}
+                  >
+                    <MoonIcon />
+                    This Evening
+                  </button>
+                  <label className="modal-input">
+                    <span>Date</span>
+                    <input
+                      type="date"
+                      value={draft.date}
+                      onChange={(e) =>
+                        setDraft({ ...draft, date: e.target.value, someday: false })
+                      }
+                      onKeyDown={(e) => e.preventDefault()}
+                    />
+                  </label>
+                  <button
+                    className="pill ghost"
+                    onClick={() => setDraft({ ...draft, date: "", someday: true })}
+                  >
+                    <SparkIcon />
+                    Someday
                   </button>
                 </div>
                 <div className="form-row">
@@ -269,15 +331,7 @@ export default function AreaPage() {
                     placeholder="Project ID (optional)"
                   />
                 </div>
-                <div className="row-actions">
-                  <button className="tiny" onClick={saveDraft}>
-                    Save
-                  </button>
-                  <button className="tiny ghost" onClick={() => setDraft(null)}>
-                    Cancel
-                  </button>
-                  {formMessage && <span className="error">{formMessage}</span>}
-                </div>
+                {formMessage && <span className="error">{formMessage}</span>}
               </div>
             </div>
           )}
@@ -320,59 +374,6 @@ export default function AreaPage() {
           )}
         </div>
       </section>
-
-      {calendarOpen && draft && (
-        <div className="modal-backdrop" onClick={() => setCalendarOpen(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Schedule</h3>
-              <button className="tiny ghost" onClick={() => setCalendarOpen(false)}>
-                Close
-              </button>
-            </div>
-            <div className="modal-body">
-              <button
-                className="modal-button"
-                onClick={() => {
-                  setDraft({ ...draft, date: today, someday: false });
-                  setCalendarOpen(false);
-                }}
-              >
-                <CalendarIcon />
-                Today
-              </button>
-              <button
-                className="modal-button"
-                onClick={() => {
-                  setDraft({ ...draft, date: today, someday: false });
-                  setCalendarOpen(false);
-                }}
-              >
-                <MoonIcon />
-                This Evening
-              </button>
-              <label className="modal-input">
-                <span>Date</span>
-                <input
-                  type="date"
-                  value={draft.date}
-                  onChange={(e) => setDraft({ ...draft, date: e.target.value, someday: false })}
-                />
-              </label>
-              <button
-                className="modal-button ghost"
-                onClick={() => {
-                  setDraft({ ...draft, date: "", someday: true });
-                  setCalendarOpen(false);
-                }}
-              >
-                <SparkIcon />
-                Someday
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </main>
   );
 }
