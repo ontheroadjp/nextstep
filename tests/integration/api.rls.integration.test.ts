@@ -79,12 +79,30 @@ suite("integration api rls/logbook", () => {
     });
     expect(todayRes.status).toBe(200);
     const todayJson = await todayRes.json();
-    expect(todayJson.items.some((t: { title: string }) => t.title.includes(prefix))).toBe(false);
+    expect(todayJson.items.some((t: { title: string }) => t.title.includes(prefix))).toBe(true);
 
     const logbookRes = await apiFetch("/api/logbook", token);
     expect(logbookRes.status).toBe(200);
     const logbookJson = await logbookRes.json();
-    expect(logbookJson.items.some((t: { title: string }) => t.title.includes(prefix))).toBe(true);
+    expect(logbookJson.items.some((t: { title: string }) => t.title.includes(prefix))).toBe(false);
+
+    const archiveRes = await apiFetch(`/api/tasks/${taskId}`, token, {
+      method: "PATCH",
+      body: JSON.stringify({ archivedAt: new Date().toISOString() }),
+    });
+    expect(archiveRes.status).toBe(200);
+
+    const todayRes2 = await apiFetch("/api/today", token, {
+      headers: { "x-tz-offset-minutes": "540" },
+    });
+    expect(todayRes2.status).toBe(200);
+    const todayJson2 = await todayRes2.json();
+    expect(todayJson2.items.some((t: { title: string }) => t.title.includes(prefix))).toBe(false);
+
+    const logbookRes2 = await apiFetch("/api/logbook", token);
+    expect(logbookRes2.status).toBe(200);
+    const logbookJson2 = await logbookRes2.json();
+    expect(logbookJson2.items.some((t: { title: string }) => t.title.includes(prefix))).toBe(true);
   });
 
   it("rejects mismatched areaId and projectId", async () => {

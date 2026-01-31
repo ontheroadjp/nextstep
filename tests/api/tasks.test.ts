@@ -73,6 +73,17 @@ describe("POST /api/tasks", () => {
     expect(json.error.code).toBe("bad_request");
   });
 
+  it("accepts empty note", async () => {
+    const req = new Request("http://localhost", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "Task", note: "" }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(201);
+  });
+
   it("creates task and returns item", async () => {
     const req = new Request("http://localhost", {
       method: "POST",

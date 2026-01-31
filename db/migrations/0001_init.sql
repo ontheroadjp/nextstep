@@ -39,16 +39,17 @@ create table if not exists tasks (
   date date null,
   someday boolean not null default false,
   completed_at timestamptz null,
+  archived_at timestamptz null,
   area_id uuid null references areas(id) on delete set null,
   project_id uuid null references projects(id) on delete set null,
   sort_key text null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint tasks_title_not_blank check (length(trim(title)) > 0),
-  constraint tasks_note_not_blank check (length(trim(note)) > 0),
   constraint tasks_sort_key_not_blank check (sort_key is null or length(trim(sort_key)) > 0),
   -- Someday excludes date; date implies someday=false. date may be null with someday=false (Anytime).
-  constraint tasks_someday_date_exclusive check (someday = false or date is null)
+  constraint tasks_someday_date_exclusive check (someday = false or date is null),
+  constraint tasks_archived_requires_completed check (archived_at is null or completed_at is not null)
 );
 
 -- Checklists
@@ -69,6 +70,7 @@ create index if not exists idx_tasks_date on tasks(date);
 create index if not exists idx_tasks_user_id_date on tasks(user_id, date);
 create index if not exists idx_tasks_someday on tasks(someday);
 create index if not exists idx_tasks_completed_at on tasks(completed_at);
+create index if not exists idx_tasks_archived_at on tasks(archived_at);
 create index if not exists idx_tasks_user_id_completed_at_desc
   on tasks(user_id, completed_at desc)
   where completed_at is not null;

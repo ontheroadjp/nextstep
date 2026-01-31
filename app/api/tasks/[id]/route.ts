@@ -16,6 +16,7 @@ type TaskUpdateInput = {
   date?: string | null;
   someday?: boolean;
   completedAt?: string | null;
+  archivedAt?: string | null;
   areaId?: string | null;
   projectId?: string | null;
   sortKey?: string | null;
@@ -39,8 +40,8 @@ export async function PATCH(
   if (body.title !== undefined && !nonEmptyString(body.title)) {
     return error("bad_request", "title must be non-empty", 400);
   }
-  if (body.note !== undefined && !nonEmptyString(body.note)) {
-    return error("bad_request", "note must be non-empty", 400);
+  if (body.note !== undefined && typeof body.note !== "string") {
+    return error("bad_request", "note must be string", 400);
   }
   if (body.areaId !== undefined && body.areaId !== null && !nonEmptyString(body.areaId)) {
     return error("bad_request", "areaId must be non-empty", 400);
@@ -83,6 +84,7 @@ export async function PATCH(
   if (normalized.date !== undefined) update.date = normalized.date;
   if (normalized.someday !== undefined) update.someday = normalized.someday;
   if (body.completedAt !== undefined) update.completed_at = body.completedAt;
+  if (body.archivedAt !== undefined) update.archived_at = body.archivedAt;
   if (body.areaId !== undefined || body.projectId !== undefined) {
     update.area_id = resolvedAreaId;
   }
@@ -97,7 +99,7 @@ export async function PATCH(
     .eq("id", params.id)
     .eq("user_id", userId)
     .select(
-      "id,title,note,date,someday,completed_at,area_id,project_id,sort_key,checklists(id,title,completed,sort_key)"
+      "id,title,note,date,someday,completed_at,archived_at,area_id,project_id,sort_key,checklists(id,title,completed,sort_key)"
     )
     .single();
 
