@@ -121,6 +121,7 @@ export default function ViewPage() {
   const saveTimer = useRef<number | null>(null);
   const draftRowRef = useRef<HTMLDivElement | null>(null);
   const editRowRef = useRef<HTMLDivElement | null>(null);
+  const editTitleRef = useRef<HTMLInputElement | null>(null);
   const savingRef = useRef(false);
   const savingEditRef = useRef(false);
   const editTouchedRef = useRef(false);
@@ -350,6 +351,14 @@ export default function ViewPage() {
     if (!isEditReady) return;
     await saveEdit();
   };
+
+  useEffect(() => {
+    if (!isEditReady) return;
+    const input = editTitleRef.current;
+    if (!input) return;
+    input.focus();
+    input.select();
+  }, [isEditReady, editing?.id]);
 
   const commitEditAndClose = async () => {
     if (!editing) return;
@@ -683,6 +692,7 @@ const handleTaskClick = async (task: Task) => {
                         isOpening={isOpening}
                         isEditReady={isEditReady}
                         setIsEditReady={setIsEditReady}
+                        editTitleRef={editTitleRef}
                         onInputFocus={handleFocus}
                         onBlurSave={handleBlurSave}
                         onEdit={handleTaskClick}
@@ -709,6 +719,7 @@ const handleTaskClick = async (task: Task) => {
                         isOpening={isOpening}
                         isEditReady={isEditReady}
                         setIsEditReady={setIsEditReady}
+                        editTitleRef={editTitleRef}
                         onInputFocus={handleFocus}
                         onBlurSave={handleBlurSave}
                         onEdit={handleTaskClick}
@@ -743,6 +754,7 @@ const handleTaskClick = async (task: Task) => {
                         isOpening={isOpening}
                         isEditReady={isEditReady}
                         setIsEditReady={setIsEditReady}
+                        editTitleRef={editTitleRef}
                         onInputFocus={handleFocus}
                         onBlurSave={handleBlurSave}
                         onEdit={handleTaskClick}
@@ -777,6 +789,7 @@ const handleTaskClick = async (task: Task) => {
                         isOpening={isOpening}
                         isEditReady={isEditReady}
                         setIsEditReady={setIsEditReady}
+                        editTitleRef={editTitleRef}
                         onInputFocus={handleFocus}
                         onBlurSave={handleBlurSave}
                         onEdit={startEdit}
@@ -804,6 +817,7 @@ const handleTaskClick = async (task: Task) => {
                   isOpening={isOpening}
                   isEditReady={isEditReady}
                   setIsEditReady={setIsEditReady}
+                  editTitleRef={editTitleRef}
                   onInputFocus={handleFocus}
                   onBlurSave={handleBlurSave}
                   onEdit={handleTaskClick}
@@ -866,6 +880,7 @@ type TaskListProps = {
   isOpening: boolean;
   isEditReady: boolean;
   setIsEditReady: (ready: boolean) => void;
+  editTitleRef: React.RefObject<HTMLInputElement>;
   onInputFocus: (event: React.FocusEvent<HTMLElement>) => void;
   onBlurSave: () => void;
   onEdit: (task: Task) => void;
@@ -888,6 +903,7 @@ function TaskList({
   isOpening,
   isEditReady,
   setIsEditReady,
+  editTitleRef,
   onInputFocus,
   onBlurSave,
   onEdit,
@@ -936,6 +952,7 @@ function TaskList({
                         onBlur={onBlurSave}
                         readOnly={!isEditReady}
                         data-readonly={!isEditReady ? "true" : undefined}
+                        ref={editTitleRef}
                         tabIndex={isEditReady ? 0 : -1}
                       />
                     </div>
