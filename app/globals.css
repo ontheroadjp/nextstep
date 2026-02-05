@@ -507,7 +507,7 @@ button:not(:disabled):hover {
 }
 
 .task-row.editing.opening {
-  grid-template-rows: auto 0fr;
+  grid-template-rows: auto 1fr;
 }
 
 .task-header {
@@ -580,6 +580,7 @@ button:not(:disabled):hover {
   color: inherit;
   font: inherit;
   outline: none;
+  cursor: pointer;
 }
 
 .title-input {

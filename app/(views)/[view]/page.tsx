@@ -912,6 +912,9 @@ function TaskList({
                         onChange={(e) => onEditChange({ ...editing, title: e.target.value })}
                         placeholder="Title"
                         onFocus={onInputFocus}
+                        onBlur={() => {
+                          if (isEditReady) void saveEdit();
+                        }}
                         readOnly={!isEditReady}
                         tabIndex={isEditReady ? 0 : -1}
                       />
@@ -928,6 +931,9 @@ function TaskList({
                       placeholder="Note (optional)"
                       rows={3}
                       onFocus={onInputFocus}
+                      onBlur={() => {
+                        if (isEditReady) void saveEdit();
+                      }}
                       readOnly={!isEditReady}
                       tabIndex={isEditReady ? 0 : -1}
                     />
