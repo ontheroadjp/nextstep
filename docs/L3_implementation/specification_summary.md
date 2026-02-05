@@ -60,6 +60,13 @@
 
 根拠: `app/page.tsx`, `app/(views)/[view]/page.tsx`
 
+## Task 編集 UI のフォーカス挙動
+- タスク編集時は最後にタップした入力（Title / Note）を `lastFocusRef` で記録し、編集有効化時に該当の入力へフォーカスを移す。
+- タッチ環境の入力開始判定は `onPointerDown` を用いて、タイトル/ノートのどちらを開くかを決める。
+- タイトル入力は `input.title-input`、ノート入力は `textarea.note-input` を使用し、入力スタイルは要素種別込みのセレクタで定義する。
+
+根拠: `app/(views)/[view]/page.tsx`, `app/globals.css`
+
 ## 未確認事項
 - UI のデザイン仕様・画面遷移詳細（実装に対する設計ドキュメントが未確認）
   - 追加確認候補: 企画/デザイン資料
