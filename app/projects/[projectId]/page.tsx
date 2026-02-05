@@ -26,11 +26,15 @@ type Editing = Draft & {
   id: string;
 };
 
-type AreaState =
+type ProjectState =
   | { status: "idle" }
   | { status: "loading" }
   | { status: "error"; message: string }
-  | { status: "ready"; item: { id: string; name: string }; tasks: Task[]; projects: any[] };
+  | {
+      status: "ready";
+      item: { id: string; name: string; note: string | null; areaId: string | null };
+      tasks: Task[];
+    };
 
 const DEFAULT_TZ = "540";
 
@@ -90,16 +94,16 @@ function getDraftLabel(draft: Draft, today: string) {
   return draft.date;
 }
 
-export default function AreaPage() {
+export default function ProjectPage() {
   const params = useParams();
-  const areaId = String(params.areaId ?? "");
+  const projectId = String(params.projectId ?? "");
   const [token, setToken] = useStoredValue("ns-access-token", "");
   const [tzOffset, setTzOffset] = useStoredValue("ns-tz-offset", DEFAULT_TZ);
   const [eveningMap, setEveningMap] = useStoredJson<Record<string, boolean>>(
     "ns-evening-map",
     {}
   );
-  const [state, setState] = useState<AreaState>({ status: "idle" });
+  const [state, setState] = useState<ProjectState>({ status: "idle" });
   const [draft, setDraft] = useState<Draft | null>(null);
   const [formMessage, setFormMessage] = useState<string | null>(null);
   const [editing, setEditing] = useState<Editing | null>(null);
@@ -118,7 +122,7 @@ export default function AreaPage() {
   const editTouchedRef = useRef(false);
   const suppressClickRef = useRef(false);
 
-  const canFetch = token.trim().length > 0 && areaId.length > 0;
+  const canFetch = token.trim().length > 0 && projectId.length > 0;
 
   const headers = useMemo(() => {
     const h = new Headers();
@@ -132,13 +136,13 @@ export default function AreaPage() {
     return getTodayString(Number.isFinite(offset) ? offset : 0);
   }, [tzOffset]);
 
-  const fetchArea = async (opts?: { silent?: boolean }) => {
+  const fetchProject = async (opts?: { silent?: boolean }) => {
     if (!canFetch) return;
     if (!opts?.silent) {
       setState({ status: "loading" });
     }
     try {
-      const res = await fetch(`/api/areas/${areaId}`, { headers });
+      const res = await fetch(`/api/projects/${projectId}`, { headers });
       const json = await res.json();
       if (!res.ok) {
         setState({ status: "error", message: json?.error?.message ?? "Request failed" });
@@ -148,7 +152,6 @@ export default function AreaPage() {
         status: "ready",
         item: json.item,
         tasks: json.tasks ?? [],
-        projects: json.projects ?? [],
       });
     } catch (err) {
       setState({ status: "error", message: err instanceof Error ? err.message : "Request failed" });
@@ -179,7 +182,7 @@ export default function AreaPage() {
         note: draft.note,
         date: draft.someday ? null : draft.date || null,
         someday: draft.someday,
-        areaId,
+        projectId,
       };
     try {
       const res = await fetch("/api/tasks", {
@@ -211,7 +214,7 @@ export default function AreaPage() {
         setIsScheduleOpen(false);
         setIsDraftClosing(false);
         savingRef.current = false;
-        fetchArea({ silent: true });
+        fetchProject({ silent: true });
       }, 280);
     } catch (err) {
       savingRef.current = false;
@@ -279,7 +282,7 @@ export default function AreaPage() {
       editTouchedRef.current = false;
       savingEditRef.current = false;
       setIsEditScheduleOpen(false);
-      fetchArea({ silent: true });
+      fetchProject({ silent: true });
       return true;
     } catch (err) {
       savingEditRef.current = false;
@@ -359,9 +362,9 @@ const handleTaskClick = async (task: Task) => {
         headers,
         body: JSON.stringify({ completedAt: nextCompletedAt }),
       });
-      fetchArea({ silent: true });
+      fetchProject({ silent: true });
     } catch {
-      fetchArea({ silent: true });
+      fetchProject({ silent: true });
     }
   };
 
@@ -376,23 +379,23 @@ const handleTaskClick = async (task: Task) => {
         body: JSON.stringify({ archivedAt: new Date().toISOString() }),
       });
     }
-    fetchArea();
+    fetchProject();
   };
 
   const handleDelete = async (task: Task) => {
     if (!token.trim()) return;
     try {
       await fetch(`/api/tasks/${task.id}`, { method: "DELETE", headers });
-      fetchArea();
+      fetchProject();
     } catch {
       // ignore
     }
   };
 
   useEffect(() => {
-    if (canFetch) fetchArea();
+    if (canFetch) fetchProject();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canFetch, areaId]);
+  }, [canFetch, projectId]);
 
   useEffect(() => {
     if (!draft) return;
@@ -438,8 +441,8 @@ const handleTaskClick = async (task: Task) => {
     <main>
       <div className="hero page">
         <div>
-          <p className="eyebrow">Area</p>
-          <h1>{state.status === "ready" ? state.item.name : "Area"}</h1>
+          <p className="eyebrow">Project</p>
+          <h1>{state.status === "ready" ? state.item.name : "Project"}</h1>
           <p className="lead">詳細UIは後で調整します。今は一覧だけ確認できます。</p>
         </div>
       </div>
@@ -593,7 +596,7 @@ const handleTaskClick = async (task: Task) => {
             />
           </label>
           <div className="actions">
-            <button onClick={fetchArea} disabled={!canFetch}>
+            <button onClick={fetchProject} disabled={!canFetch}>
               Refresh
             </button>
             {!canFetch && <span className="hint">token を入れると取得できます</span>}

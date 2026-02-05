@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export function baseTaskSelect() {
-  return "id,title,note,date,someday,completed_at,archived_at,area_id,project_id,sort_key,checklists(id,title,completed,sort_key)";
+  return "id,title,note,date,someday,completed_at,archived_at,created_at,area_id,project_id,sort_key,checklists(id,title,completed,sort_key)";
 }
 
 export async function fetchToday(

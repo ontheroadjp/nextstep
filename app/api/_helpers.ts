@@ -16,6 +16,7 @@ export type Task = {
   someday: boolean;
   completedAt: string | null;
   archivedAt: string | null;
+  createdAt: string | null;
   areaId: string | null;
   projectId: string | null;
   sortKey: string | null;
@@ -44,6 +45,7 @@ export function mapTask(row: Record<string, unknown>): Task {
     someday: Boolean(row.someday),
     completedAt: (row.completed_at as string | null) ?? null,
     archivedAt: (row.archived_at as string | null) ?? null,
+    createdAt: (row.created_at as string | null) ?? null,
     areaId: (row.area_id as string | null) ?? null,
     projectId: (row.project_id as string | null) ?? null,
     sortKey: (row.sort_key as string | null) ?? null,
