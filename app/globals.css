@@ -558,6 +558,12 @@ button:not(:disabled):hover {
   align-items: center;
 }
 
+.task-title-cell {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
 .checkbox-shell {
   width: 16px;
   height: 16px;

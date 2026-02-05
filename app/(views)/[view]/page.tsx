@@ -926,6 +926,7 @@ function TaskList({
                         disabled={isLogbook}
                       />
                     </label>
+                    <div className="task-title-cell">
                       <input
                         className="title-input"
                         value={editing.title}
@@ -936,6 +937,7 @@ function TaskList({
                         readOnly={!isEditReady}
                         tabIndex={isEditReady ? 0 : -1}
                       />
+                    </div>
                   </div>
                 </div>
                 <div className="task-meta" />
@@ -1045,7 +1047,9 @@ function TaskList({
                     />
                   </label>
                 <div>
-                  <input className="title-input" value={item.title} readOnly tabIndex={-1} />
+                  <div className="task-title-cell">
+                    <input className="title-input" value={item.title} readOnly tabIndex={-1} />
+                  </div>
                 </div>
                 </div>
               </div>
