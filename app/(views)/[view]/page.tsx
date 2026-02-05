@@ -935,6 +935,7 @@ function TaskList({
                         onFocus={onInputFocus}
                         onBlur={onBlurSave}
                         readOnly={!isEditReady}
+                        data-readonly={!isEditReady ? "true" : undefined}
                         tabIndex={isEditReady ? 0 : -1}
                       />
                     </div>
@@ -953,6 +954,7 @@ function TaskList({
                       onFocus={onInputFocus}
                       onBlur={onBlurSave}
                       readOnly={!isEditReady}
+                      data-readonly={!isEditReady ? "true" : undefined}
                       tabIndex={isEditReady ? 0 : -1}
                     />
                   <div className="schedule draft-offset">
@@ -1048,7 +1050,13 @@ function TaskList({
                   </label>
                 <div>
                   <div className="task-title-cell">
-                    <input className="title-input" value={item.title} readOnly tabIndex={-1} />
+                    <input
+                      className="title-input"
+                      value={item.title}
+                      readOnly
+                      data-readonly="true"
+                      tabIndex={-1}
+                    />
                   </div>
                 </div>
                 </div>
@@ -1065,6 +1073,7 @@ function TaskList({
                   placeholder="Note (optional)"
                   rows={3}
                   readOnly
+                  data-readonly="true"
                   tabIndex={-1}
                 />
               </div>

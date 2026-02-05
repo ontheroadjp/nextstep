@@ -604,6 +604,11 @@ button:not(:disabled):hover {
   cursor: pointer;
 }
 
+.title-input[data-readonly="true"],
+.note-input[data-readonly="true"] {
+  pointer-events: none;
+}
+
 .title-input {
   font-size: 14px;
   line-height: 1.4;
