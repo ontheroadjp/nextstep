@@ -1,0 +1,65 @@
+# Specification Summary (Implementation)
+
+## 認証・認可
+- API は `Authorization: Bearer <token>` または `x-access-token` を受け取り、Supabase Auth でユーザーを検証する。
+- ユーザー ID は `requireUserContext` で取得し、以降の DB 操作に利用する。
+
+根拠: `app/api/_helpers.ts`, `app/api/_supabase.ts`
+
+## 日付境界と today
+- `x-tz-offset-minutes` を受け取り、UTC 日付を補正して `today` を算出する。
+
+根拠: `app/api/_helpers.ts`
+
+## ビュー定義（API）
+- Today: `date <= today`, `someday = false`, `archived_at is null`
+- Upcoming: `date > today`, `someday = false`, `archived_at is null`（日付ごとにグループ化）
+- Anytime: `date is null`, `someday = false`, `archived_at is null`
+- Someday: `someday = true`, `archived_at is null`
+- Logbook: `archived_at is not null`
+- Inbox: `area_id is null`, `archived_at is null`
+
+根拠: `app/api/_queries.ts`, `app/api/today/route.ts`, `app/api/upcoming/route.ts`, `app/api/anytime/route.ts`, `app/api/someday/route.ts`, `app/api/logbook/route.ts`, `app/api/inbox/route.ts`
+
+## 並び順
+- Today/Upcoming/Anytime/Someday: `sort_key` 昇順（`nullsFirst: false`）、`created_at` 昇順、必要に応じて `date` 昇順
+- Logbook: `archived_at` 降順
+
+根拠: `app/api/_queries.ts`, `app/api/logbook/route.ts`, `app/api/areas/[areaId]/route.ts`, `app/api/projects/[projectId]/route.ts`
+
+## Task 作成・更新
+- `title` は必須、`note` は任意。
+- `someday = true` の場合 `date = null` に正規化。
+- `date` が設定された場合 `someday = false` に正規化。
+- `areaId` / `projectId` は所有チェックを行う。
+- `projectId` がある場合、`areaId` は Project の `area_id` と一致する必要がある。
+- `projectId` に紐づく `area_id` があり、`areaId` 未指定の場合は補完される。
+
+根拠: `app/api/tasks/route.ts`, `app/api/tasks/[id]/route.ts`, `app/api/_helpers.ts`
+
+## Project / Area / Checklist
+- Project: `name` / `note` 必須。
+- Area: `name` 必須。
+- Checklist: `title` 必須。
+- `sortKey` は任意だが空文字は拒否。
+
+根拠: `app/api/projects/route.ts`, `app/api/areas/route.ts`, `app/api/checklists/[id]/route.ts`, `app/api/tasks/[id]/checklists/route.ts`
+
+## データ制約（DB）
+- `tasks.someday = true` の場合 `tasks.date is null`
+- `tasks.archived_at is not null` の場合 `completed_at is not null`
+- `projects.note` は必須
+- 主要テーブルは `user_id` と RLS による制御
+
+根拠: `db/migrations/0001_init.sql`, `db/maintenance/0003_archive_flow.sql`
+
+## フロントエンドの実装仕様
+- ダッシュボードは Today/Inbox の件数と Area を表示。
+- 各ビューは `/api/{view}` を取得して表示。
+- Access Token と TZ Offset は `localStorage` に保存する。
+
+根拠: `app/page.tsx`, `app/(views)/[view]/page.tsx`
+
+## 未確認事項
+- UI のデザイン仕様・画面遷移詳細（実装に対する設計ドキュメントが未確認）
+  - 追加確認候補: 企画/デザイン資料
