@@ -906,37 +906,31 @@ function TaskList({
                         disabled={isLogbook}
                       />
                     </label>
-                    {isEditReady ? (
                       <input
                         className="title-input"
                         value={editing.title}
                         onChange={(e) => onEditChange({ ...editing, title: e.target.value })}
                         placeholder="Title"
                         onFocus={onInputFocus}
+                        readOnly={!isEditReady}
+                        tabIndex={isEditReady ? 0 : -1}
                       />
-                    ) : (
-                      <div className="task-title">{editing.title || "Title"}</div>
-                    )}
                   </div>
                 </div>
                 <div className="task-meta" />
               </div>
               <div className="task-details">
                 <div className="task-details-inner">
-                    {isEditReady ? (
-                      <textarea
-                        className="note-input draft-offset"
-                        value={editing.note}
-                        onChange={(e) => onEditChange({ ...editing, note: e.target.value })}
-                        placeholder="Note (optional)"
-                        rows={3}
-                        onFocus={onInputFocus}
-                      />
-                    ) : (
-                      <div className="task-note draft-offset">
-                        {editing.note || "Note (optional)"}
-                      </div>
-                    )}
+                    <textarea
+                      className="note-input draft-offset"
+                      value={editing.note}
+                      onChange={(e) => onEditChange({ ...editing, note: e.target.value })}
+                      placeholder="Note (optional)"
+                      rows={3}
+                      onFocus={onInputFocus}
+                      readOnly={!isEditReady}
+                      tabIndex={isEditReady ? 0 : -1}
+                    />
                   <div className="schedule draft-offset">
                     {getDraftLabel(editing, today) ? (
                       <button
@@ -1029,7 +1023,7 @@ function TaskList({
                     />
                   </label>
                 <div>
-                  <div className="task-title">{item.title}</div>
+                  <input className="title-input" value={item.title} readOnly tabIndex={-1} />
                 </div>
                 </div>
               </div>
@@ -1038,7 +1032,16 @@ function TaskList({
               </div>
             </div>
             <div className="task-details">
-              <div className="task-details-inner" />
+              <div className="task-details-inner">
+                <textarea
+                  className="note-input draft-offset"
+                  value={item.note ?? ""}
+                  placeholder="Note (optional)"
+                  rows={3}
+                  readOnly
+                  tabIndex={-1}
+                />
+              </div>
             </div>
           </div>
         );

@@ -575,6 +575,11 @@ button:not(:disabled):hover {
 .title-input,
 .note-input {
   width: 100%;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  outline: none;
 }
 
 .title-input {
@@ -589,6 +594,7 @@ button:not(:disabled):hover {
   min-height: 3.6em;
   margin-top: 4px;
 }
+
 
 .icon-row {
   display: flex;
