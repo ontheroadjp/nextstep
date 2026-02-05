@@ -595,11 +595,6 @@ button:not(:disabled):hover {
   margin-top: 4px;
 }
 
-.title-input:disabled,
-.note-input:disabled {
-  cursor: default;
-  opacity: 1;
-}
 
 .icon-row {
   display: flex;
