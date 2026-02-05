@@ -346,6 +346,11 @@ export default function ViewPage() {
     setEditing(next);
   };
 
+  const handleBlurSave = async () => {
+    if (!isEditReady) return;
+    await saveEdit();
+  };
+
   const commitEditAndClose = async () => {
     if (!editing) return;
     setIsClosing(true);
@@ -679,6 +684,7 @@ const handleTaskClick = async (task: Task) => {
                         isEditReady={isEditReady}
                         setIsEditReady={setIsEditReady}
                         onInputFocus={handleFocus}
+                        onBlurSave={handleBlurSave}
                         onEdit={handleTaskClick}
                         onEditChange={handleEditChange}
                         onToggleComplete={toggleComplete}
@@ -704,6 +710,7 @@ const handleTaskClick = async (task: Task) => {
                         isEditReady={isEditReady}
                         setIsEditReady={setIsEditReady}
                         onInputFocus={handleFocus}
+                        onBlurSave={handleBlurSave}
                         onEdit={handleTaskClick}
                         onEditChange={handleEditChange}
                         onToggleComplete={toggleComplete}
@@ -737,6 +744,7 @@ const handleTaskClick = async (task: Task) => {
                         isEditReady={isEditReady}
                         setIsEditReady={setIsEditReady}
                         onInputFocus={handleFocus}
+                        onBlurSave={handleBlurSave}
                         onEdit={handleTaskClick}
                         onEditChange={handleEditChange}
                         onToggleComplete={toggleComplete}
@@ -762,6 +770,15 @@ const handleTaskClick = async (task: Task) => {
                         isLogbook={isLogbook}
                         today={today}
                         eveningMap={eveningMap}
+                        isEditScheduleOpen={isEditScheduleOpen}
+                        setIsEditScheduleOpen={setIsEditScheduleOpen}
+                        editRowRef={editRowRef}
+                        isClosing={isClosing}
+                        isOpening={isOpening}
+                        isEditReady={isEditReady}
+                        setIsEditReady={setIsEditReady}
+                        onInputFocus={handleFocus}
+                        onBlurSave={handleBlurSave}
                         onEdit={startEdit}
                         onEditChange={handleEditChange}
                         onToggleComplete={toggleComplete}
@@ -788,6 +805,7 @@ const handleTaskClick = async (task: Task) => {
                   isEditReady={isEditReady}
                   setIsEditReady={setIsEditReady}
                   onInputFocus={handleFocus}
+                  onBlurSave={handleBlurSave}
                   onEdit={handleTaskClick}
                   onEditChange={handleEditChange}
                   onToggleComplete={toggleComplete}
@@ -849,6 +867,7 @@ type TaskListProps = {
   isEditReady: boolean;
   setIsEditReady: (ready: boolean) => void;
   onInputFocus: (event: React.FocusEvent<HTMLElement>) => void;
+  onBlurSave: () => void;
   onEdit: (task: Task) => void;
   onEditChange: (editing: Editing | null) => void;
   onToggleComplete: (task: Task) => void;
@@ -870,6 +889,7 @@ function TaskList({
   isEditReady,
   setIsEditReady,
   onInputFocus,
+  onBlurSave,
   onEdit,
   onEditChange,
   onToggleComplete,
@@ -912,9 +932,7 @@ function TaskList({
                         onChange={(e) => onEditChange({ ...editing, title: e.target.value })}
                         placeholder="Title"
                         onFocus={onInputFocus}
-                        onBlur={() => {
-                          if (isEditReady) void saveEdit();
-                        }}
+                        onBlur={onBlurSave}
                         readOnly={!isEditReady}
                         tabIndex={isEditReady ? 0 : -1}
                       />
@@ -931,9 +949,7 @@ function TaskList({
                       placeholder="Note (optional)"
                       rows={3}
                       onFocus={onInputFocus}
-                      onBlur={() => {
-                        if (isEditReady) void saveEdit();
-                      }}
+                      onBlur={onBlurSave}
                       readOnly={!isEditReady}
                       tabIndex={isEditReady ? 0 : -1}
                     />
