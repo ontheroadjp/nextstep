@@ -354,6 +354,10 @@ export default function ViewPage() {
     await saveEdit();
   };
 
+  const handleFocusTarget = (target: "title" | "note") => {
+    lastFocusRef.current = target;
+  };
+
   useEffect(() => {
     if (!isEditReady) return;
     const target =
@@ -696,6 +700,8 @@ const handleTaskClick = async (task: Task) => {
                         isEditReady={isEditReady}
                         setIsEditReady={setIsEditReady}
                         editTitleRef={editTitleRef}
+                        editNoteRef={editNoteRef}
+                        onFocusTarget={handleFocusTarget}
                         onInputFocus={handleFocus}
                         onBlurSave={handleBlurSave}
                         onEdit={handleTaskClick}
@@ -723,6 +729,8 @@ const handleTaskClick = async (task: Task) => {
                         isEditReady={isEditReady}
                         setIsEditReady={setIsEditReady}
                         editTitleRef={editTitleRef}
+                        editNoteRef={editNoteRef}
+                        onFocusTarget={handleFocusTarget}
                         onInputFocus={handleFocus}
                         onBlurSave={handleBlurSave}
                         onEdit={handleTaskClick}
@@ -758,6 +766,8 @@ const handleTaskClick = async (task: Task) => {
                         isEditReady={isEditReady}
                         setIsEditReady={setIsEditReady}
                         editTitleRef={editTitleRef}
+                        editNoteRef={editNoteRef}
+                        onFocusTarget={handleFocusTarget}
                         onInputFocus={handleFocus}
                         onBlurSave={handleBlurSave}
                         onEdit={handleTaskClick}
@@ -793,6 +803,8 @@ const handleTaskClick = async (task: Task) => {
                         isEditReady={isEditReady}
                         setIsEditReady={setIsEditReady}
                         editTitleRef={editTitleRef}
+                        editNoteRef={editNoteRef}
+                        onFocusTarget={handleFocusTarget}
                         onInputFocus={handleFocus}
                         onBlurSave={handleBlurSave}
                         onEdit={startEdit}
@@ -821,6 +833,8 @@ const handleTaskClick = async (task: Task) => {
                   isEditReady={isEditReady}
                   setIsEditReady={setIsEditReady}
                   editTitleRef={editTitleRef}
+                  editNoteRef={editNoteRef}
+                  onFocusTarget={handleFocusTarget}
                   onInputFocus={handleFocus}
                   onBlurSave={handleBlurSave}
                   onEdit={handleTaskClick}
@@ -884,6 +898,8 @@ type TaskListProps = {
   isEditReady: boolean;
   setIsEditReady: (ready: boolean) => void;
   editTitleRef: React.RefObject<HTMLInputElement>;
+  editNoteRef: React.RefObject<HTMLTextAreaElement>;
+  onFocusTarget: (target: "title" | "note") => void;
   onInputFocus: (event: React.FocusEvent<HTMLElement>) => void;
   onBlurSave: () => void;
   onEdit: (task: Task) => void;
@@ -907,6 +923,8 @@ function TaskList({
   isEditReady,
   setIsEditReady,
   editTitleRef,
+  editNoteRef,
+  onFocusTarget,
   onInputFocus,
   onBlurSave,
   onEdit,
@@ -930,10 +948,10 @@ function TaskList({
                 if (!isEditReady && !isClosing) setIsEditReady(true);
               }}
             >
-              <div className="task-header">
-                <div className="task-main">
-                  <div className="task-title-row">
-                    <label className="checkbox">
+                <div className="task-header">
+                  <div className="task-main">
+                    <div className="task-title-row">
+                      <label className="checkbox">
                       <input
                         type="checkbox"
                         checked={Boolean(item.completedAt)}
@@ -945,14 +963,19 @@ function TaskList({
                         disabled={isLogbook}
                       />
                     </label>
-                    <div className="task-title-cell">
+                    <div
+                      className="task-title-cell"
+                      onPointerDown={() => {
+                        onFocusTarget("title");
+                      }}
+                    >
                       <input
                         className="title-input"
                         value={editing.title}
                         onChange={(e) => onEditChange({ ...editing, title: e.target.value })}
                         placeholder="Title"
-                        onMouseDown={() => {
-                          lastFocusRef.current = "title";
+                        onPointerDown={() => {
+                          onFocusTarget("title");
                         }}
                         onFocus={onInputFocus}
                         onBlur={onBlurSave}
@@ -966,7 +989,12 @@ function TaskList({
                 </div>
                 <div className="task-meta" />
               </div>
-              <div className="task-details">
+              <div
+                className="task-details"
+                onPointerDown={() => {
+                  onFocusTarget("note");
+                }}
+              >
                 <div className="task-details-inner">
                     <textarea
                       className="note-input draft-offset"
@@ -974,8 +1002,8 @@ function TaskList({
                       onChange={(e) => onEditChange({ ...editing, note: e.target.value })}
                       placeholder="Note (optional)"
                       rows={3}
-                      onMouseDown={() => {
-                        lastFocusRef.current = "note";
+                      onPointerDown={() => {
+                        onFocusTarget("note");
                       }}
                       onFocus={onInputFocus}
                       onBlur={onBlurSave}

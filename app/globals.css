@@ -324,8 +324,8 @@ button:not(:disabled):hover {
     padding: 6px 0;
   }
 
-  .title-input,
-  .note-input {
+  input.title-input,
+  textarea.note-input {
     font-size: 16px;
   }
 }
@@ -598,8 +598,8 @@ button:not(:disabled):hover {
   overflow: hidden;
 }
 
-.title-input,
-.note-input {
+input.title-input,
+textarea.note-input {
   width: 100%;
   background: transparent;
   border: none;
@@ -609,19 +609,19 @@ button:not(:disabled):hover {
   cursor: pointer;
 }
 
-.title-input[data-readonly="true"],
-.note-input[data-readonly="true"] {
+input.title-input[data-readonly="true"],
+textarea.note-input[data-readonly="true"] {
   pointer-events: none;
 }
 
-.title-input {
+input.title-input {
   font-size: 16px;
   line-height: 1.4;
   padding: 0;
   height: 1.4em;
 }
 
-.note-input {
+textarea.note-input {
   resize: vertical;
   min-height: 3.6em;
   margin-top: 4px;
