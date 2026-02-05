@@ -122,6 +122,8 @@ export default function ViewPage() {
   const draftRowRef = useRef<HTMLDivElement | null>(null);
   const editRowRef = useRef<HTMLDivElement | null>(null);
   const editTitleRef = useRef<HTMLInputElement | null>(null);
+  const editNoteRef = useRef<HTMLTextAreaElement | null>(null);
+  const lastFocusRef = useRef<"title" | "note">("title");
   const savingRef = useRef(false);
   const savingEditRef = useRef(false);
   const editTouchedRef = useRef(false);
@@ -354,10 +356,11 @@ export default function ViewPage() {
 
   useEffect(() => {
     if (!isEditReady) return;
-    const input = editTitleRef.current;
-    if (!input) return;
-    input.focus();
-    input.select();
+    const target =
+      lastFocusRef.current === "note" ? editNoteRef.current : editTitleRef.current;
+    if (!target) return;
+    target.focus();
+    if ("select" in target) target.select();
   }, [isEditReady, editing?.id]);
 
   const commitEditAndClose = async () => {
@@ -948,6 +951,9 @@ function TaskList({
                         value={editing.title}
                         onChange={(e) => onEditChange({ ...editing, title: e.target.value })}
                         placeholder="Title"
+                        onMouseDown={() => {
+                          lastFocusRef.current = "title";
+                        }}
                         onFocus={onInputFocus}
                         onBlur={onBlurSave}
                         readOnly={!isEditReady}
@@ -968,10 +974,14 @@ function TaskList({
                       onChange={(e) => onEditChange({ ...editing, note: e.target.value })}
                       placeholder="Note (optional)"
                       rows={3}
+                      onMouseDown={() => {
+                        lastFocusRef.current = "note";
+                      }}
                       onFocus={onInputFocus}
                       onBlur={onBlurSave}
                       readOnly={!isEditReady}
                       data-readonly={!isEditReady ? "true" : undefined}
+                      ref={editNoteRef}
                       tabIndex={isEditReady ? 0 : -1}
                     />
                   <div className="schedule draft-offset">
