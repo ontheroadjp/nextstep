@@ -1,4 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;700&display=swap");
+@import "@fortawesome/fontawesome-free/css/all.min.css";
 
 /* CSS reset */
 *,
@@ -693,14 +694,10 @@ textarea.note-input {
 .date-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
+  gap: 8px;
+  font-size: 16px;
+  line-height: 1.4;
   color: var(--muted);
-}
-
-.date-badge svg {
-  width: 16px;
-  height: 16px;
 }
 
 .date-today {
@@ -808,12 +805,24 @@ textarea.note-input {
   font-weight: 600;
 }
 
+.icon-project {
+  color: #6a7ea5;
+}
+
+.icon-area {
+  color: #d98a2b;
+}
+
+.icon-inbox {
+  color: #3b4d7a;
+}
+
 .icon-today {
   color: #d98a2b;
 }
 
 .icon-upcoming {
-  color: #6a7ea5;
+  color: #bd5e4a;
 }
 
 .icon-anytime {
@@ -821,15 +830,11 @@ textarea.note-input {
 }
 
 .icon-someday {
-  color: #5b7a4f;
+  color: #6b5f4f;
 }
 
 .icon-logbook {
-  color: #7a5d4a;
-}
-
-.icon-inbox {
-  color: #bd5e4a;
+  color: #5b7a4f;
 }
 
 .date-group {

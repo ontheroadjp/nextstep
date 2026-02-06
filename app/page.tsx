@@ -136,31 +136,31 @@ export default function HomePage() {
           status={today.status}
           detail={`Overdue ${todayCount.overdue} / Today ${todayCount.rest}`}
           showDetail={today.status === "ready"}
-          icon={<SunIcon className="icon-today" />}
+          icon={<i className="fa-solid fa-star icon-today" aria-hidden />}
         />
         <CategoryCard
           title="Upcoming"
           href="/upcoming"
           status={today.status}
-          icon={<CalendarIcon className="icon-upcoming" />}
+          icon={<i className="fa-solid fa-calendar icon-upcoming" aria-hidden />}
         />
         <CategoryCard
           title="Anytime"
           href="/anytime"
           status={today.status}
-          icon={<InfinityIcon className="icon-anytime" />}
+          icon={<i className="fa-brands fa-stack-overflow icon-anytime" aria-hidden />}
         />
         <CategoryCard
           title="Someday"
           href="/someday"
           status={today.status}
-          icon={<SparkIcon className="icon-someday" />}
+          icon={<i className="fa-solid fa-archive icon-someday" aria-hidden />}
         />
         <CategoryCard
           title="Logbook"
           href="/logbook"
           status={today.status}
-          icon={<ArchiveIcon className="icon-logbook" />}
+          icon={<i className="fa-solid fa-book icon-logbook" aria-hidden />}
         />
         <CategoryCard
           title="Inbox"
@@ -168,7 +168,7 @@ export default function HomePage() {
           status={inbox.status}
           detail={`Overdue ${inboxCount.overdue} / Others ${inboxCount.rest}`}
           showDetail={inbox.status === "ready"}
-          icon={<InboxIcon className="icon-inbox" />}
+          icon={<i className="fa-solid fa-inbox icon-inbox" aria-hidden />}
         />
         {areas.status === "loading" && <CategoryCard title="Areas" status="loading" />}
         {areas.status === "error" && (
@@ -249,89 +249,5 @@ function CategoryCard({
     </a>
   ) : (
     body
-  );
-}
-
-function CalendarIcon({ className }: { className?: string }) {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden className={className}>
-      <path
-        d="M7 3v3M17 3v3M4 9h16M5 6h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function SunIcon({ className }: { className?: string }) {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden className={className}>
-      <path
-        d="M12 3v2m0 14v2m9-9h-2M5 12H3m14.95 6.95-1.41-1.41M8.46 8.46 7.05 7.05m10.49 0-1.41 1.41M8.46 15.54l-1.41 1.41M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function SparkIcon({ className }: { className?: string }) {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden className={className}>
-      <path
-        d="M12 2v6m0 8v6M2 12h6m8 0h6M5 5l4 4m6 6 4 4M19 5l-4 4m-6 6-4 4"
-        stroke="currentColor"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function ArchiveIcon({ className }: { className?: string }) {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden className={className}>
-      <path
-        d="M3 7h18M5 7l1-3h12l1 3M6 7v11a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7M9 11h6"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function InboxIcon({ className }: { className?: string }) {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden className={className}>
-      <path
-        d="M4 5h16l2 8v6H2v-6l2-8Zm0 8h5l2 3h2l2-3h5"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function InfinityIcon({ className }: { className?: string }) {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden className={className}>
-      <path
-        d="M7.5 9.5c-2 0-3.5 1.6-3.5 3.5S5.5 16.5 7.5 16.5c1.4 0 2.6-.7 4.5-2.5 1.9-1.8 3.1-2.5 4.5-2.5 2 0 3.5 1.6 3.5 3.5s-1.5 3.5-3.5 3.5c-1.4 0-2.6-.7-4.5-2.5-1.9-1.8-3.1-2.5-4.5-2.5Z"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
   );
 }
