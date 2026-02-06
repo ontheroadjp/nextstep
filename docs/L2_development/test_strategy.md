@@ -3,6 +3,7 @@
 ## テスト種別
 - Unit/Function テスト: Vitest
 - Integration テスト: 実サーバー + 実DB (Supabase)
+- Smoke テスト: `tests/smoke/*`（エントリポイントの疎通確認）
 
 根拠: `package.json`, `vitest.config.ts`, `docs/L1/05_testing.md`, `.github/workflows/integration.yml`
 
@@ -11,6 +12,13 @@
 - `npm run test:integration`
 
 根拠: `package.json`, `.github/workflows/tests.yml`, `.github/workflows/integration.yml`
+
+## CI 方針
+- GitHub Actions を継続利用
+- 既存 CI を更新する方針（差分は最小）
+- `commands.test` と同一の `npm run test` を CI で実行
+
+根拠: `.github/workflows/tests.yml`, `repo.profile.json`
 
 ## 前提環境変数（Integration）
 - `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `BASE_URL`, `TEST_PREFIX`, `TEST_EMAIL`, `TEST_PASSWORD`, `TEST_EMAIL_2`, `TEST_PASSWORD_2`
