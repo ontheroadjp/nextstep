@@ -608,11 +608,11 @@ function TaskList({
                           className="icon-button"
                           onClick={() => setIsEditScheduleOpen(!isEditScheduleOpen)}
                         >
-                          <CalendarIcon />
+                          <i className="fa-solid fa-calendar icon-upcoming" aria-hidden />
                         </button>
                       )}
                       <button className="icon-button" type="button">
-                        <ChecklistIcon />
+                        <i className="fa-solid fa-list-check" aria-hidden />
                       </button>
                     </div>
                   </div>
@@ -633,7 +633,7 @@ function TaskList({
                         setIsEditScheduleOpen(false);
                       }}
                     >
-                      <MoonIcon />
+                      <i className="fa-solid fa-moon" aria-hidden />
                       This Evening
                     </button>
                     <InlineCalendar
@@ -651,7 +651,7 @@ function TaskList({
                         setIsEditScheduleOpen(false);
                       }}
                     >
-                      <SparkIcon />
+                      <i className="fa-solid fa-archive icon-someday" aria-hidden />
                       Someday
                     </button>
                   </div>
@@ -726,101 +726,28 @@ function TaskDateBadge({
   return <DateBadge label={label} />;
 }
 
-function CalendarIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M7 3v3M17 3v3M4 9h16M5 6h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function ChecklistIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="m4 7 2 2 4-4M4 15 6 17 10 13M14 7h6M14 15h6"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function MoonIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M21 14.5A8.5 8.5 0 1 1 9.5 3a7 7 0 1 0 11.5 11.5Z"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function SparkIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M12 2v6m0 8v6M2 12h6m8 0h6M5 5l4 4m6 6 4 4M19 5l-4 4m-6 6-4 4"
-        stroke="currentColor"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 function DateBadge({ label }: { label: string }) {
-  if (label === "Today") {
-    return (
-      <span className="date-badge date-today">
-        <SunIcon />
-        Today
-      </span>
-    );
-  }
-  if (label === "This Evening") {
-    return (
-      <span className="date-badge date-evening">
-        <MoonIcon />
-        This Evening
-      </span>
-    );
-  }
-  if (label === "Someday") {
-    return (
-      <span className="date-badge date-someday">
-        <SparkIcon />
-        Someday
-      </span>
-    );
-  }
-  return <span className="date-badge">{label}</span>;
-}
-
-function SunIcon() {
+  const iconClass =
+    label === "Today"
+      ? "fa-star icon-today"
+      : label === "This Evening"
+        ? "fa-moon date-evening"
+        : label === "Someday"
+          ? "fa-archive icon-someday"
+          : "fa-calendar icon-upcoming";
+  const badgeClass =
+    label === "Today"
+      ? "date-badge date-today"
+      : label === "This Evening"
+        ? "date-badge date-evening"
+        : label === "Someday"
+          ? "date-badge date-someday"
+          : "date-badge";
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M12 3v2m0 14v2m9-9h-2M5 12H3m14.95 6.95-1.41-1.41M8.46 8.46 7.05 7.05m10.49 0-1.41 1.41M8.46 15.54l-1.41 1.41M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    <span className={badgeClass}>
+      <i className={`fa-solid ${iconClass}`} aria-hidden />
+      {label}
+    </span>
   );
 }
 

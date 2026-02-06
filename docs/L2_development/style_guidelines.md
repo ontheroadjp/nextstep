@@ -12,8 +12,27 @@
 ### カラー / テーマ
 - `:root` の CSS 変数で色と影を定義（`--bg`, `--ink`, `--muted`, `--accent`, `--accent-2`, `--card`, `--border`, `--shadow`）
 - ページ背景は淡色グラデーションを採用（`html, body`）
+- アイコンは Font Awesome 6（npm）を利用
 
 根拠: `app/globals.css`
+
+### アイコン運用
+- 主要カテゴリは Font Awesome 6 の固定アイコンと固定色を使用
+- Project: `fa-tachometer` + `.icon-project`（`#6a7ea5`）
+- Area: `fa-cube` + `.icon-area`（`#d98a2b`）
+- Inbox: `fa-inbox` + `.icon-inbox`（`#3b4d7a`）
+- Today: `fa-star` + `.icon-today`（`#d98a2b`）
+- Upcoming: `fa-calendar` + `.icon-upcoming`（`#bd5e4a`）
+- Anytime: `fa-stack-overflow` + `.icon-anytime`（`#3f6b5f`）
+- Someday: `fa-archive` + `.icon-someday`（`#6b5f4f`）
+- Logbook: `fa-book` + `.icon-logbook`（`#5b7a4f`）
+- タスク詳細の日付表示（`.date-badge`）は 16px で、ラベルに応じて左側アイコンを切り替える
+- `Today`: `fa-star`（`.icon-today`）
+- `This Evening`: `fa-moon`（`.date-evening`）
+- `Someday`: `fa-archive`（`.icon-someday`）
+- その他: `fa-calendar`（`.icon-upcoming`）
+
+根拠: `app/page.tsx`, `app/(views)/[view]/page.tsx`, `app/areas/[areaId]/page.tsx`, `app/projects/[projectId]/page.tsx`, `app/globals.css`
 
 ### カラー詳細（HEX）
 - メインカラー（Text/Inks）: `#1b1a16`（`--ink`）
@@ -76,7 +95,7 @@
 - カード表現: `.view-card`, `.view-header`, `.badge`, `.detail`, `.card-link`
 - タイトル装飾: `.with-icon`, `.title-icon`
 - ステータス文言: `.error`, `.muted`, `.hint`
-- カテゴリアイコン: `.icon-today`, `.icon-upcoming`, `.icon-anytime`, `.icon-someday`, `.icon-logbook`, `.icon-inbox`
+- カテゴリアイコン: `.icon-project`, `.icon-area`, `.icon-today`, `.icon-upcoming`, `.icon-anytime`, `.icon-someday`, `.icon-logbook`, `.icon-inbox`
 
 根拠: `app/page.tsx`, `app/globals.css`
 
