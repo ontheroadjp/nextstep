@@ -1025,6 +1025,30 @@ textarea.note-input {
   border-bottom: 1px solid #eee7de;
 }
 
+.group-header.is-disabled {
+  opacity: 0.45;
+}
+
+.group-header-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  color: inherit;
+  text-decoration: none;
+  padding: 6px 0;
+}
+
+.group-header-link:hover {
+  color: inherit;
+}
+
+.group-header-link[aria-disabled="true"] {
+  cursor: default;
+  pointer-events: none;
+}
+
 .group-title {
   display: inline-flex;
   align-items: center;
