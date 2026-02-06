@@ -347,6 +347,29 @@ export default function ViewPage() {
     if ("select" in target) target.select();
   }, [isEditReady, editing?.id]);
 
+  const ensureCardVisible = (extraPadding = 24) => {
+    const row = editRowRef.current;
+    if (!row) return;
+    const rect = row.getBoundingClientRect();
+    const safeBottom = window.innerHeight - extraPadding;
+    if (rect.bottom <= safeBottom) return;
+    window.scrollBy({ top: rect.bottom - safeBottom, behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    if (!editing) return;
+    window.requestAnimationFrame(() => {
+      ensureCardVisible();
+    });
+  }, [editing?.id]);
+
+  useEffect(() => {
+    if (!isEditScheduleOpen) return;
+    window.requestAnimationFrame(() => {
+      ensureCardVisible(32);
+    });
+  }, [isEditScheduleOpen]);
+
   const commitEditAndClose = async () => {
     if (!editing) return;
     setIsClosing(true);
