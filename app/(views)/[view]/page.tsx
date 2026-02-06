@@ -603,20 +603,40 @@ const handleTaskClick = async (task: Task) => {
                   {groupedCards.groups.map((group) => (
                     <div key={group.key} className="group-card">
                       {group.title && (
-                        <div className="group-header">
-                          <div className="group-title">
-                            {group.kind === "project" && (
-                              <i className="fa-solid fa-tachometer icon-project" aria-hidden />
-                            )}
-                            {group.kind === "area" && (
-                              <i className="fa-solid fa-cube icon-area" aria-hidden />
-                            )}
-                            {group.title}
-                          </div>
-                          {group.href && (
-                            <a className="chevron-link" href={group.href} aria-label="Open">
-                              <i className="fa-solid fa-chevron-right" aria-hidden />
+                        <div className={`group-header${isLocked ? " is-disabled" : ""}`}>
+                          {group.href ? (
+                            <a
+                              className="group-header-link"
+                              href={isLocked ? undefined : group.href}
+                              aria-disabled={isLocked}
+                              tabIndex={isLocked ? -1 : 0}
+                              onClick={(event) => {
+                                if (isLocked) event.preventDefault();
+                              }}
+                            >
+                              <div className="group-title">
+                                {group.kind === "project" && (
+                                  <i className="fa-solid fa-tachometer icon-project" aria-hidden />
+                                )}
+                                {group.kind === "area" && (
+                                  <i className="fa-solid fa-cube icon-area" aria-hidden />
+                                )}
+                                {group.title}
+                              </div>
+                              <span className="chevron-link" aria-hidden="true">
+                                <i className="fa-solid fa-chevron-right" aria-hidden />
+                              </span>
                             </a>
+                          ) : (
+                            <div className="group-title">
+                              {group.kind === "project" && (
+                                <i className="fa-solid fa-tachometer icon-project" aria-hidden />
+                              )}
+                              {group.kind === "area" && (
+                                <i className="fa-solid fa-cube icon-area" aria-hidden />
+                              )}
+                              {group.title}
+                            </div>
                           )}
                         </div>
                       )}
