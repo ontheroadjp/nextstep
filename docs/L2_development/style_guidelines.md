@@ -31,6 +31,11 @@
 - `This Evening`: `fa-moon`（`.date-evening`）
 - `Someday`: `fa-archive`（`.icon-someday`）
 - その他: `fa-calendar`（`.icon-upcoming`）
+- 直近日付の表示ルール（`en-US`）:
+  - 明日: `Tomorrow`
+  - 今日から2〜5日後: 曜日（例: `Mon`）
+  - 6日後以降: `m/d(曜日)`（ゼロ埋めなし）
+  - 過去日付: `m/d(曜日)` + `fa-flag`、文字色は紫（`.date-overdue`）
 
 根拠: `app/page.tsx`, `app/(views)/[view]/page.tsx`, `app/areas/[areaId]/page.tsx`, `app/projects/[projectId]/page.tsx`, `app/globals.css`
 
@@ -106,6 +111,8 @@
 - 追加/操作: `.fab-add`, `.logbook-stack-button`, `.icon-button`, `.pill`, `.toolbar`
 - 日付/スケジュール: `.schedule`, `.schedule-label-button`, `.date-badge`
 - カレンダー: `.calendar`, `.calendar-header`, `.calendar-grid`
+- カレンダー: 今日セルは `Today` アイコンのみ表示（テキストなし）、過去日は非表示
+- ボタン: `Today / This Evening / Someday` は高さ 1.8 倍、`Someday` は全幅、`Clear` は赤系
 
 根拠: `app/(views)/[view]/page.tsx`, `app/globals.css`
 
