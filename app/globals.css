@@ -321,7 +321,7 @@ button:not(:disabled):hover {
   }
 
   .task-row.editing {
-    padding: 6px 0;
+    padding: 15px 18px;
   }
 
   input.title-input,
