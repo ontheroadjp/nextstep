@@ -551,7 +551,7 @@ button:not(:disabled):hover {
 }
 
 .task-row.is-disabled {
-  opacity: 0.6;
+  opacity: 0.45;
   pointer-events: none;
 }
 
