@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import { formatOverdueDaysAgo } from "../../_lib/overdue";
 import { sortDatedByDateAscThenCreatedDesc, sortMixedByDateAndCreated } from "../../_lib/task_sort";
 
 type Task = {
@@ -1111,6 +1112,9 @@ function TaskList({
                 </div>
               </div>
               <div className="task-meta">
+                {item.date && isDateBefore(item.date, today) ? (
+                  <TaskDateBadge task={item} today={today} eveningMap={eveningMap} />
+                ) : null}
                 <div className="row-actions" />
               </div>
             </div>
@@ -1485,8 +1489,8 @@ function formatRelativeDateLabel(date: string, today: string) {
     const month = target.month + 1;
     return { text: `${month}/${target.day}(${weekday})`, isPast: false };
   }
-  const month = target.month + 1;
-  return { text: `${month}/${target.day}(${weekday})`, isPast: true };
+  const overdueText = formatOverdueDaysAgo(date, today);
+  return { text: overdueText ?? `${target.month + 1}/${target.day}(${weekday})`, isPast: true };
 }
 
 function dateToNumber(value: string) {
