@@ -691,6 +691,29 @@ textarea.note-input {
   pointer-events: auto;
 }
 
+.schedule-panel .pill {
+  min-height: calc(1.8 * 16px);
+}
+
+.schedule-panel .pill.full-width {
+  grid-column: 1 / -1;
+}
+
+.schedule-panel .pill.clear-date {
+  grid-column: 1 / -1;
+  background: #f3d6d1;
+  color: #a03a2a;
+}
+
+.schedule-panel .pill.clear-date:hover {
+  background: #ebc3bb;
+}
+
+.schedule-panel .pill.clear-date:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .date-badge {
   display: inline-flex;
   align-items: center;
@@ -710,6 +733,10 @@ textarea.note-input {
 
 .date-someday {
   color: #5b7a4f;
+}
+
+.date-overdue {
+  color: #6f3c8a;
 }
 
 .icon-chip {
@@ -803,6 +830,18 @@ textarea.note-input {
   background: #e7ddd0;
   color: var(--ink);
   font-weight: 600;
+}
+
+.calendar-day.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.calendar-day .today-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
 .icon-project {

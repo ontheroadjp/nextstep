@@ -81,7 +81,10 @@ function getTodayString(offsetMinutes: number) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-function getScheduleLabel(fields: Pick<EditFields, "someday" | "date" | "evening">, today: string) {
+function getScheduleLabel(
+  fields: Pick<EditFields, "someday" | "date" | "evening">,
+  today: string
+) {
   if (fields.someday) return "Someday";
   if (!fields.date) return "";
   if (fields.date === today) return fields.evening ? "This Evening" : "Today";
@@ -595,9 +598,16 @@ function TaskList({
                     {getScheduleLabel(editing, today) ? (
                       <button
                         className="schedule-label-button"
-                        onClick={() => setIsEditScheduleOpen(!isEditScheduleOpen)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setIsEditScheduleOpen(!isEditScheduleOpen);
+                        }}
+                        onPointerDown={(event) => event.stopPropagation()}
                       >
-                        <DateBadge label={getScheduleLabel(editing, today)} />
+                        <DateBadge
+                          label={getScheduleLabel(editing, today)}
+                          today={today}
+                        />
                       </button>
                     ) : (
                       <span />
@@ -606,7 +616,11 @@ function TaskList({
                       {!getScheduleLabel(editing, today) && (
                         <button
                           className="icon-button"
-                          onClick={() => setIsEditScheduleOpen(!isEditScheduleOpen)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setIsEditScheduleOpen(!isEditScheduleOpen);
+                          }}
+                          onPointerDown={(event) => event.stopPropagation()}
                         >
                           <i className="fa-solid fa-calendar icon-upcoming" aria-hidden />
                         </button>
@@ -616,7 +630,10 @@ function TaskList({
                       </button>
                     </div>
                   </div>
-                  <div className={`schedule-panel draft-offset ${isEditScheduleOpen ? "is-open" : ""}`}>
+                  <div
+                    className={`schedule-panel draft-offset ${isEditScheduleOpen ? "is-open" : ""}`}
+                    onPointerDown={(event) => event.stopPropagation()}
+                  >
                     <button
                       className="pill ghost"
                       onClick={() => {
@@ -645,7 +662,7 @@ function TaskList({
                       }}
                     />
                     <button
-                      className="pill ghost"
+                      className="pill ghost full-width"
                       onClick={() => {
                         onEditChange({ ...editing, date: "", someday: true, evening: false });
                         setIsEditScheduleOpen(false);
@@ -653,6 +670,15 @@ function TaskList({
                     >
                       <i className="fa-solid fa-archive icon-someday" aria-hidden />
                       Someday
+                    </button>
+                    <button
+                      className="pill ghost clear-date"
+                      onClick={() => {
+                        onEditChange({ ...editing, date: "", someday: false, evening: false });
+                        setIsEditScheduleOpen(false);
+                      }}
+                    >
+                      Clear
                     </button>
                   </div>
                   {editMessage && <span className="error">{editMessage}</span>}
@@ -723,30 +749,44 @@ function TaskDateBadge({
 }) {
   const label = getTaskDateLabel(task, today, eveningMap);
   if (!label) return null;
-  return <DateBadge label={label} />;
+  return <DateBadge label={label} today={today} />;
 }
 
-function DateBadge({ label }: { label: string }) {
-  const iconClass =
-    label === "Today"
-      ? "fa-star icon-today"
-      : label === "This Evening"
-        ? "fa-moon date-evening"
-        : label === "Someday"
-          ? "fa-archive icon-someday"
-          : "fa-calendar icon-upcoming";
-  const badgeClass =
-    label === "Today"
-      ? "date-badge date-today"
-      : label === "This Evening"
-        ? "date-badge date-evening"
-        : label === "Someday"
-          ? "date-badge date-someday"
-          : "date-badge";
+function DateBadge({ label, today }: { label: string; today: string }) {
+  if (label === "Today") {
+    return (
+      <span className="date-badge date-today">
+        <i className="fa-solid fa-star icon-today" aria-hidden />
+        Today
+      </span>
+    );
+  }
+  if (label === "This Evening") {
+    return (
+      <span className="date-badge date-evening">
+        <i className="fa-solid fa-moon date-evening" aria-hidden />
+        This Evening
+      </span>
+    );
+  }
+  if (label === "Someday") {
+    return (
+      <span className="date-badge date-someday">
+        <i className="fa-solid fa-archive icon-someday" aria-hidden />
+        Someday
+      </span>
+    );
+  }
+  const formatted = formatRelativeDateLabel(label, today);
+  if (!formatted) return null;
+  const isOverdue = formatted.isPast;
   return (
-    <span className={badgeClass}>
-      <i className={`fa-solid ${iconClass}`} aria-hidden />
-      {label}
+    <span className={`date-badge${isOverdue ? " date-overdue" : ""}`}>
+      <i
+        className={`fa-solid ${isOverdue ? "fa-flag" : "fa-calendar"} ${isOverdue ? "date-overdue" : "icon-upcoming"}`}
+        aria-hidden
+      />
+      {formatted.text}
     </span>
   );
 }
@@ -759,17 +799,15 @@ type InlineCalendarProps = {
 
 function InlineCalendar({ selectedDate, today, onSelect }: InlineCalendarProps) {
   const initial = useMemo(() => {
-    const base = selectedDate || today;
-    const parsed = parseDateString(base);
+    const parsed = parseDateString(today);
     return parsed ?? getUtcDateParts(new Date());
-  }, [selectedDate, today]);
+  }, [today]);
   const [cursor, setCursor] = useState<{ year: number; month: number }>(initial);
 
   useEffect(() => {
-    const base = selectedDate || today;
-    const parsed = parseDateString(base);
+    const parsed = parseDateString(today);
     if (parsed) setCursor({ year: parsed.year, month: parsed.month });
-  }, [selectedDate, today]);
+  }, [today]);
 
   const monthLabel = formatMonthLabel(cursor.year, cursor.month);
   const cells = buildMonthGrid(cursor.year, cursor.month);
@@ -808,14 +846,25 @@ function InlineCalendar({ selectedDate, today, onSelect }: InlineCalendarProps) 
           const date = formatDateString(cursor.year, cursor.month, cell);
           const isSelected = selectedDate === date;
           const isToday = today === date;
+          const isPast = isDateBefore(date, today);
+          if (isPast) return <span key={date} />;
           return (
             <button
               key={date}
               type="button"
-              className={`calendar-day${isSelected ? " selected" : ""}${isToday ? " today" : ""}`}
-              onClick={() => onSelect(date)}
+              className={`calendar-day${isSelected ? " selected" : ""}${isToday ? " today" : ""}${isPast ? " is-disabled" : ""}`}
+              onClick={() => {
+                if (isPast) return;
+                onSelect(date);
+              }}
             >
-              {cell}
+              {isToday ? (
+                <span className="today-icon">
+                  <i className="fa-solid fa-star icon-today" aria-hidden />
+                </span>
+              ) : (
+                cell
+              )}
             </button>
           );
         })}
@@ -846,6 +895,33 @@ function formatDateString(year: number, month: number, day: number) {
   const mm = String(month + 1).padStart(2, "0");
   const dd = String(day).padStart(2, "0");
   return `${year}-${mm}-${dd}`;
+}
+
+function formatRelativeDateLabel(date: string, today: string) {
+  const target = parseDateString(date);
+  const base = parseDateString(today);
+  if (!target || !base) return null;
+  const diff = dateToNumber(date) - dateToNumber(today);
+  const formatter = new Intl.DateTimeFormat("en-US", { weekday: "short" });
+  const weekday = formatter.format(new Date(Date.UTC(target.year, target.month, target.day)));
+  if (diff === 1) return { text: "Tomorrow", isPast: false };
+  if (diff >= 2 && diff <= 5) return { text: weekday, isPast: false };
+  if (diff >= 6) {
+    const month = target.month + 1;
+    return { text: `${month}/${target.day}(${weekday})`, isPast: false };
+  }
+  const month = target.month + 1;
+  return { text: `${month}/${target.day}(${weekday})`, isPast: true };
+}
+
+function dateToNumber(value: string) {
+  const parsed = parseDateString(value);
+  if (!parsed) return 0;
+  return Math.floor(Date.UTC(parsed.year, parsed.month, parsed.day) / 86400000);
+}
+
+function isDateBefore(value: string, today: string) {
+  return dateToNumber(value) < dateToNumber(today);
 }
 
 function formatMonthLabel(year: number, month: number) {
