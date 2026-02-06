@@ -308,28 +308,60 @@ export default function AreaPage() {
     }
   };
 
+  const getScrollContainer = (node: HTMLElement | null): HTMLElement | Window => {
+    let current = node?.parentElement ?? null;
+    while (current) {
+      const style = window.getComputedStyle(current);
+      const overflowY = style.overflowY;
+      if (
+        (overflowY === "auto" || overflowY === "scroll" || overflowY === "overlay") &&
+        current.scrollHeight > current.clientHeight
+      ) {
+        return current;
+      }
+      current = current.parentElement;
+    }
+    return window;
+  };
+
   const ensureCardVisible = (extraPadding = 24) => {
     const row = editRowRef.current;
     if (!row) return;
+    const container = getScrollContainer(row);
     const rect = row.getBoundingClientRect();
-    const safeBottom = window.innerHeight - extraPadding;
+    const containerBottom =
+      container === window ? window.innerHeight : (container as HTMLElement).getBoundingClientRect().bottom;
+    const safeBottom = containerBottom - extraPadding;
     if (rect.bottom <= safeBottom) return;
-    window.scrollBy({ top: rect.bottom - safeBottom, behavior: "smooth" });
+    const delta = rect.bottom - safeBottom;
+    if (container === window) {
+      window.scrollBy({ top: delta, behavior: "smooth" });
+    } else {
+      (container as HTMLElement).scrollBy({ top: delta, behavior: "smooth" });
+    }
+  };
+
+  const scheduleEnsureCardVisible = (extraPadding = 24, duration = 420) => {
+    if (!editing) return;
+    const start = performance.now();
+    const tick = (now: number) => {
+      ensureCardVisible(extraPadding);
+      if (now - start < duration) {
+        window.requestAnimationFrame(tick);
+      }
+    };
+    window.requestAnimationFrame(tick);
   };
 
   useEffect(() => {
     if (!editing) return;
-    window.requestAnimationFrame(() => {
-      ensureCardVisible();
-    });
+    scheduleEnsureCardVisible(24, 420);
   }, [editing?.id]);
 
   useEffect(() => {
-    if (!isEditScheduleOpen) return;
-    window.requestAnimationFrame(() => {
-      ensureCardVisible(32);
-    });
-  }, [isEditScheduleOpen]);
+    if (!isEditScheduleOpen || !editing) return;
+    scheduleEnsureCardVisible(32, 520);
+  }, [isEditScheduleOpen, editing?.id]);
 
 const handleTaskClick = async (task: Task) => {
     if (suppressClickRef.current) {
