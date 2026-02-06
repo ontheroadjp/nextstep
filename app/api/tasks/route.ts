@@ -29,8 +29,8 @@ export async function POST(request: Request): Promise<Response> {
   const body = await readJson<TaskCreateInput>(request);
   if (body instanceof Response) return body;
 
-  if (!nonEmptyString(body.title)) {
-    return error("bad_request", "title is required", 400);
+  if (body.title !== undefined && typeof body.title !== "string") {
+    return error("bad_request", "title must be string", 400);
   }
   if (body.note !== undefined && typeof body.note !== "string") {
     return error("bad_request", "note must be string", 400);
@@ -67,11 +67,12 @@ export async function POST(request: Request): Promise<Response> {
     }
   }
 
+  const title = typeof body.title === "string" ? body.title.trim() : "";
   const { data, error: insertError } = await supabase
     .from("tasks")
     .insert({
       user_id: userId,
-      title: body.title.trim(),
+      title,
       note: body.note?.trim() ?? "",
       date: normalized.date ?? null,
       someday: normalized.someday ?? false,

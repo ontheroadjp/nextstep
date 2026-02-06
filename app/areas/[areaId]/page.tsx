@@ -14,7 +14,7 @@ type Task = {
   createdAt: string | null;
 };
 
-type Draft = {
+type EditFields = {
   title: string;
   note: string;
   date: string;
@@ -22,7 +22,7 @@ type Draft = {
   evening: boolean;
 };
 
-type Editing = Draft & {
+type Editing = EditFields & {
   id: string;
 };
 
@@ -76,18 +76,11 @@ function getTodayString(offsetMinutes: number) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-function getDateLabel(draft: Draft, today: string) {
-  if (draft.someday) return "Someday";
-  if (!draft.date) return "";
-  if (draft.date === today) return "Today";
-  return draft.date;
-}
-
-function getDraftLabel(draft: Draft, today: string) {
-  if (draft.someday) return "Someday";
-  if (!draft.date) return "";
-  if (draft.date === today) return draft.evening ? "This Evening" : "Today";
-  return draft.date;
+function getScheduleLabel(fields: Pick<EditFields, "someday" | "date" | "evening">, today: string) {
+  if (fields.someday) return "Someday";
+  if (!fields.date) return "";
+  if (fields.date === today) return fields.evening ? "This Evening" : "Today";
+  return fields.date;
 }
 
 export default function AreaPage() {
@@ -100,25 +93,21 @@ export default function AreaPage() {
     {}
   );
   const [state, setState] = useState<AreaState>({ status: "idle" });
-  const [draft, setDraft] = useState<Draft | null>(null);
-  const [formMessage, setFormMessage] = useState<string | null>(null);
+  const [createMessage, setCreateMessage] = useState<string | null>(null);
   const [editing, setEditing] = useState<Editing | null>(null);
   const [editMessage, setEditMessage] = useState<string | null>(null);
-  const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [isEditScheduleOpen, setIsEditScheduleOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
   const [isEditReady, setIsEditReady] = useState(false);
-  const [isDraftClosing, setIsDraftClosing] = useState(false);
-  const saveTimer = useRef<number | null>(null);
-  const draftRowRef = useRef<HTMLDivElement | null>(null);
   const editRowRef = useRef<HTMLDivElement | null>(null);
-  const savingRef = useRef(false);
+  const createSavingRef = useRef(false);
   const savingEditRef = useRef(false);
   const editTouchedRef = useRef(false);
   const suppressClickRef = useRef(false);
 
   const canFetch = token.trim().length > 0 && areaId.length > 0;
+  const isLocked = Boolean(editing);
 
   const headers = useMemo(() => {
     const h = new Headers();
@@ -155,32 +144,17 @@ export default function AreaPage() {
     }
   };
 
-  const openDraft = () => {
-    if (draft) return;
-    setEditing(null);
-    setEditMessage(null);
-    setIsScheduleOpen(false);
-    setIsEditScheduleOpen(false);
-    setIsDraftClosing(false);
-    setDraft({ title: "", note: "", date: "", someday: false, evening: false });
-    setFormMessage(null);
-  };
-
-  const saveDraft = async () => {
-    if (!draft || savingRef.current || !token.trim()) return;
-    if (!draft.title.trim()) {
-      setFormMessage("title is required");
-      return;
-    }
-    savingRef.current = true;
-    setFormMessage(null);
-      const payload: Record<string, unknown> = {
-        title: draft.title,
-        note: draft.note,
-        date: draft.someday ? null : draft.date || null,
-        someday: draft.someday,
-        areaId,
-      };
+  const createTaskAndEdit = async () => {
+    if (!token.trim() || createSavingRef.current || isLocked) return;
+    createSavingRef.current = true;
+    setCreateMessage(null);
+    const payload: Record<string, unknown> = {
+      title: "",
+      note: "",
+      date: null,
+      someday: false,
+      areaId,
+    };
     try {
       const res = await fetch("/api/tasks", {
         method: "POST",
@@ -189,45 +163,43 @@ export default function AreaPage() {
       });
       const json = await res.json();
       if (!res.ok) {
-        setFormMessage(json?.error?.message ?? "Failed to create");
-        savingRef.current = false;
+        setCreateMessage(json?.error?.message ?? "Failed to create");
+        createSavingRef.current = false;
         return;
       }
-      const newId = json?.item?.id as string | undefined;
-      if (newId) {
-        setEveningMap((prev) => {
-          const next = { ...prev };
-          if (draft.evening && draft.date === today && !draft.someday) {
-            next[newId] = true;
-          } else {
-            delete next[newId];
-          }
-          return next;
-        });
+      const item = json?.item as Task | undefined;
+      if (!item?.id) {
+        setCreateMessage("Failed to create");
+        createSavingRef.current = false;
+        return;
       }
-      setIsDraftClosing(true);
-      window.setTimeout(() => {
-        setDraft(null);
-        setIsScheduleOpen(false);
-        setIsDraftClosing(false);
-        savingRef.current = false;
-        fetchArea({ silent: true });
-      }, 280);
+      setEveningMap((prev) => {
+        const next = { ...prev };
+        delete next[item.id];
+        return next;
+      });
+      setState((prev) => {
+        if (prev.status !== "ready") {
+          return { status: "ready", item: { id: areaId, name: "" }, tasks: [item], projects: [] };
+        }
+        const exists = prev.tasks.some((t) => t.id === item.id);
+        return exists ? prev : { ...prev, tasks: [item, ...prev.tasks] };
+      });
+      startEdit(item);
+      fetchArea({ silent: true });
     } catch (err) {
-      savingRef.current = false;
-      setFormMessage(err instanceof Error ? err.message : "Failed to create");
+      setCreateMessage(err instanceof Error ? err.message : "Failed to create");
+    } finally {
+      createSavingRef.current = false;
     }
   };
 
   const startEdit = (task: Task) => {
     if (editing?.id === task.id) return;
-    setDraft(null);
-    setFormMessage(null);
     editTouchedRef.current = false;
     setIsClosing(false);
     setIsOpening(true);
     setIsEditReady(false);
-    setIsScheduleOpen(false);
     setIsEditScheduleOpen(false);
     setEditing({
       id: task.id,
@@ -243,10 +215,6 @@ export default function AreaPage() {
   const saveEdit = async (): Promise<boolean> => {
     if (!editing || savingEditRef.current || !token.trim()) return false;
     if (!editTouchedRef.current) return false;
-    if (!editing.title.trim()) {
-      setEditMessage("title is required");
-      return false;
-    }
     savingEditRef.current = true;
     setEditMessage(null);
     const payload: Record<string, unknown> = {
@@ -395,23 +363,6 @@ const handleTaskClick = async (task: Task) => {
   }, [canFetch, areaId]);
 
   useEffect(() => {
-    if (!draft) return;
-    const handleClick = (event: MouseEvent) => {
-      if (!draftRowRef.current) return;
-      if (draftRowRef.current.contains(event.target as Node)) return;
-      suppressClickRef.current = true;
-      window.setTimeout(() => {
-        suppressClickRef.current = false;
-      }, 0);
-      void saveDraft();
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-    };
-  }, [draft, saveDraft]);
-
-  useEffect(() => {
     if (!editing) return;
     const handleClick = (event: MouseEvent) => {
       if (!editRowRef.current) return;
@@ -452,98 +403,7 @@ const handleTaskClick = async (task: Task) => {
         )}
         <div className="view-card full">
           <div className="toolbar" />
-          {draft && (
-            <div
-              className={`task-row editing${isDraftClosing ? " closing" : ""}`}
-              ref={draftRowRef}
-            >
-              <div className="task-main">
-                <div className="task-title-row">
-                  <span className="checkbox-shell" aria-hidden />
-                  <input
-                    className="title-input"
-                    value={draft.title}
-                    onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-                    placeholder="Title"
-                    onFocus={handleFocus}
-                  />
-                </div>
-                <textarea
-                  className="note-input draft-offset"
-                  value={draft.note}
-                  onChange={(e) => setDraft({ ...draft, note: e.target.value })}
-                  placeholder="Note (optional)"
-                  rows={3}
-                  onFocus={handleFocus}
-                />
-                <div className="schedule draft-offset">
-                    {getDraftLabel(draft, today) ? (
-                      <button
-                        className="schedule-label-button"
-                        onClick={() => setIsScheduleOpen((open) => !open)}
-                      >
-                      <DateBadge label={getDraftLabel(draft, today)} />
-                      </button>
-                    ) : (
-                      <span />
-                    )}
-                  <div className="icon-row">
-                    {!getDraftLabel(draft, today) && (
-                      <button
-                        className="icon-button"
-                        onClick={() => setIsScheduleOpen((open) => !open)}
-                      >
-                        <CalendarIcon />
-                      </button>
-                    )}
-                    <button className="icon-button" type="button">
-                      <ChecklistIcon />
-                    </button>
-                  </div>
-                </div>
-                <div className={`schedule-panel draft-offset ${isScheduleOpen ? "is-open" : ""}`}>
-                    <button
-                      className="pill ghost"
-                      onClick={() => {
-                        setDraft({ ...draft, date: today, someday: false, evening: false });
-                        setIsScheduleOpen(false);
-                      }}
-                    >
-                      Today
-                    </button>
-                    <button
-                      className="pill ghost"
-                      onClick={() => {
-                        setDraft({ ...draft, date: today, someday: false, evening: true });
-                        setIsScheduleOpen(false);
-                      }}
-                    >
-                      <MoonIcon />
-                      This Evening
-                    </button>
-                    <InlineCalendar
-                      selectedDate={draft.someday ? "" : draft.date}
-                      today={today}
-                      onSelect={(date) => {
-                        setDraft({ ...draft, date, someday: false, evening: false });
-                        setIsScheduleOpen(false);
-                      }}
-                    />
-                    <button
-                      className="pill ghost"
-                      onClick={() => {
-                        setDraft({ ...draft, date: "", someday: true, evening: false });
-                        setIsScheduleOpen(false);
-                      }}
-                    >
-                      <SparkIcon />
-                      Someday
-                    </button>
-                  </div>
-                {formMessage && <span className="error">{formMessage}</span>}
-              </div>
-            </div>
-          )}
+          {createMessage && <p className="error">{createMessage}</p>}
           {state.status === "error" && <p className="error">{state.message}</p>}
           {state.status === "loading" && <p className="muted">Loading...</p>}
           {state.status === "idle" && <p className="muted">No data yet.</p>}
@@ -551,6 +411,7 @@ const handleTaskClick = async (task: Task) => {
               <TaskList
                 items={state.tasks}
                 editing={editing}
+                isLocked={isLocked}
                 today={today}
                 eveningMap={eveningMap}
                 isEditScheduleOpen={isEditScheduleOpen}
@@ -569,7 +430,12 @@ const handleTaskClick = async (task: Task) => {
             />
           )}
         </div>
-        <button className="fab-add" onClick={openDraft} aria-label="Add task">
+        <button
+          className="fab-add"
+          onClick={createTaskAndEdit}
+          aria-label="Add task"
+          disabled={!canFetch || isLocked}
+        >
           +
         </button>
       </section>
@@ -607,6 +473,7 @@ const handleTaskClick = async (task: Task) => {
 type TaskListProps = {
   items: Task[];
   editing: Editing | null;
+  isLocked: boolean;
   today: string;
   eveningMap: Record<string, boolean>;
   isEditScheduleOpen: boolean;
@@ -627,6 +494,7 @@ type TaskListProps = {
 function TaskList({
   items,
   editing,
+  isLocked,
   today,
   eveningMap,
   isEditScheduleOpen,
@@ -648,6 +516,7 @@ function TaskList({
     <div className="task-list">
       {items.map((item) => {
         const isEditing = editing?.id === item.id;
+        const isDisabled = isLocked && !isEditing;
         if (isEditing && editing) {
           return (
             <div
@@ -705,18 +574,18 @@ function TaskList({
                     </div>
                   )}
                   <div className="schedule draft-offset">
-                    {getDraftLabel(editing, today) ? (
+                    {getScheduleLabel(editing, today) ? (
                       <button
                         className="schedule-label-button"
                         onClick={() => setIsEditScheduleOpen(!isEditScheduleOpen)}
                       >
-                        <DateBadge label={getDraftLabel(editing, today)} />
+                        <DateBadge label={getScheduleLabel(editing, today)} />
                       </button>
                     ) : (
                       <span />
                     )}
                     <div className="icon-row">
-                      {!getDraftLabel(editing, today) && (
+                      {!getScheduleLabel(editing, today) && (
                         <button
                           className="icon-button"
                           onClick={() => setIsEditScheduleOpen(!isEditScheduleOpen)}
@@ -777,8 +646,12 @@ function TaskList({
         return (
           <div
             key={item.id}
-            className={`task-row clickable ${item.completedAt ? "completed" : ""}`}
-            onClick={() => onEdit(item)}
+            className={`task-row clickable ${item.completedAt ? "completed" : ""}${isDisabled ? " is-disabled" : ""}`}
+            aria-disabled={isDisabled}
+            onClick={() => {
+              if (isDisabled) return;
+              onEdit(item);
+            }}
           >
             <div className="task-header">
               <div className="task-main">
@@ -792,6 +665,7 @@ function TaskList({
                         e.stopPropagation();
                         onToggleComplete(item);
                       }}
+                      disabled={isDisabled}
                     />
                   </label>
                 <div>
