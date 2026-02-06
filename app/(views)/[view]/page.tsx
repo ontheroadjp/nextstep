@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import { sortDatedByDateAscThenCreatedDesc, sortMixedByDateAndCreated } from "../../_lib/task_sort";
 
 type Task = {
   id: string;
@@ -16,7 +17,7 @@ type Task = {
   projectId: string | null;
 };
 
-type Draft = {
+type EditFields = {
   title: string;
   note: string;
   date: string;
@@ -24,7 +25,7 @@ type Draft = {
   evening: boolean;
 };
 
-type Editing = Draft & {
+type Editing = EditFields & {
   id: string;
 };
 
@@ -82,18 +83,11 @@ function getTodayString(offsetMinutes: number) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-function getDateLabel(draft: Draft, today: string) {
-  if (draft.someday) return "Someday";
-  if (!draft.date) return "";
-  if (draft.date === today) return "Today";
-  return draft.date;
-}
-
-function getDraftLabel(draft: Draft, today: string) {
-  if (draft.someday) return "Someday";
-  if (!draft.date) return "";
-  if (draft.date === today) return draft.evening ? "This Evening" : "Today";
-  return draft.date;
+function getScheduleLabel(fields: Pick<EditFields, "someday" | "date" | "evening">, today: string) {
+  if (fields.someday) return "Someday";
+  if (!fields.date) return "";
+  if (fields.date === today) return fields.evening ? "This Evening" : "Today";
+  return fields.date;
 }
 
 export default function ViewPage() {
@@ -108,23 +102,18 @@ export default function ViewPage() {
   const [state, setState] = useState<ViewState>({ status: "idle" });
   const [areas, setAreas] = useState<AreaRef[]>([]);
   const [projects, setProjects] = useState<ProjectRef[]>([]);
-  const [draft, setDraft] = useState<Draft | null>(null);
-  const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [isEditScheduleOpen, setIsEditScheduleOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
   const [isEditReady, setIsEditReady] = useState(false);
-  const [isDraftClosing, setIsDraftClosing] = useState(false);
-  const [formMessage, setFormMessage] = useState<string | null>(null);
+  const [createMessage, setCreateMessage] = useState<string | null>(null);
   const [editing, setEditing] = useState<Editing | null>(null);
   const [editMessage, setEditMessage] = useState<string | null>(null);
-  const saveTimer = useRef<number | null>(null);
-  const draftRowRef = useRef<HTMLDivElement | null>(null);
   const editRowRef = useRef<HTMLDivElement | null>(null);
   const editTitleRef = useRef<HTMLInputElement | null>(null);
   const editNoteRef = useRef<HTMLTextAreaElement | null>(null);
   const lastFocusRef = useRef<"title" | "note">("title");
-  const savingRef = useRef(false);
+  const createSavingRef = useRef(false);
   const savingEditRef = useRef(false);
   const editTouchedRef = useRef(false);
   const suppressClickRef = useRef(false);
@@ -133,6 +122,7 @@ export default function ViewPage() {
   const isLogbook = view === "logbook";
   const needsGrouping = view === "today" || view === "anytime" || view === "someday";
   const showThisEvening = view === "today";
+  const isLocked = Boolean(editing);
 
   const headers = useMemo(() => {
     const h = new Headers();
@@ -202,40 +192,25 @@ export default function ViewPage() {
     }
   };
 
-  const openDraft = () => {
-    if (draft) return;
-    setEditing(null);
-    setEditMessage(null);
-    setIsScheduleOpen(false);
-    setIsEditScheduleOpen(false);
-    setIsDraftClosing(false);
+  const createTaskAndEdit = async () => {
+    if (!token.trim() || createSavingRef.current || isLocked) return;
+    createSavingRef.current = true;
+    setCreateMessage(null);
     let initialDate = "";
     let initialSomeday = false;
     if (view === "today") initialDate = today;
     if (view === "someday") initialSomeday = true;
-    setDraft({
-      title: "",
-      note: "",
-      date: initialDate,
-      someday: initialSomeday,
-      evening: false,
-    });
-    setFormMessage(null);
-  };
-
-  const saveDraft = async () => {
-    if (!draft || savingRef.current || !token.trim()) return;
-    if (!draft.title.trim()) {
-      setFormMessage("title is required");
+    const defaultTitle = "新規タスク";
+    if (!defaultTitle.trim()) {
+      setCreateMessage("タイトルを入力してください");
+      createSavingRef.current = false;
       return;
     }
-    savingRef.current = true;
-    setFormMessage(null);
     const payload: Record<string, unknown> = {
-      title: draft.title,
-      note: draft.note,
-      date: draft.someday ? null : draft.date || null,
-      someday: draft.someday,
+      title: defaultTitle,
+      note: "",
+      date: initialSomeday ? null : initialDate || null,
+      someday: initialSomeday,
     };
     try {
       const res = await fetch("/api/tasks", {
@@ -245,45 +220,47 @@ export default function ViewPage() {
       });
       const json = await res.json();
       if (!res.ok) {
-        setFormMessage(json?.error?.message ?? "Failed to create");
-        savingRef.current = false;
+        setCreateMessage(json?.error?.message ?? "Failed to create");
+        createSavingRef.current = false;
         return;
       }
-      const newId = json?.item?.id as string | undefined;
-      if (newId) {
-        setEveningMap((prev) => {
-          const next = { ...prev };
-          if (draft.evening && draft.date === today && !draft.someday) {
-            next[newId] = true;
-          } else {
-            delete next[newId];
-          }
-          return next;
-        });
+      const item = json?.item as Task | undefined;
+      if (!item?.id) {
+        setCreateMessage("Failed to create");
+        createSavingRef.current = false;
+        return;
       }
-      setIsDraftClosing(true);
-      window.setTimeout(() => {
-        setDraft(null);
-        setIsScheduleOpen(false);
-        setIsDraftClosing(false);
-        savingRef.current = false;
-        fetchView({ silent: true });
-      }, 280);
+      setEveningMap((prev) => {
+        const next = { ...prev };
+        if (initialDate === today && !initialSomeday) {
+          next[item.id] = false;
+        } else {
+          delete next[item.id];
+        }
+        return next;
+      });
+      setState((prev) => {
+        if (prev.status !== "ready") {
+          return { status: "ready", items: [item] };
+        }
+        const exists = prev.items.some((t) => t.id === item.id);
+        return exists ? prev : { ...prev, items: [item, ...prev.items] };
+      });
+      startEdit(item);
+      fetchView({ silent: true });
     } catch (err) {
-      savingRef.current = false;
-      setFormMessage(err instanceof Error ? err.message : "Failed to create");
+      setCreateMessage(err instanceof Error ? err.message : "Failed to create");
+    } finally {
+      createSavingRef.current = false;
     }
   };
 
   const startEdit = (task: Task) => {
     if (editing?.id === task.id) return;
-    setDraft(null);
-    setFormMessage(null);
     editTouchedRef.current = false;
     setIsClosing(false);
     setIsOpening(true);
     setIsEditReady(false);
-    setIsScheduleOpen(false);
     setIsEditScheduleOpen(false);
     setEditing({
       id: task.id,
@@ -300,7 +277,7 @@ export default function ViewPage() {
     if (!editing || savingEditRef.current || !token.trim()) return false;
     if (!editTouchedRef.current) return false;
     if (!editing.title.trim()) {
-      setEditMessage("title is required");
+      setEditMessage("タイトルを入力してください");
       return false;
     }
     savingEditRef.current = true;
@@ -474,23 +451,6 @@ const handleTaskClick = async (task: Task) => {
   }, [canFetch, view]);
 
   useEffect(() => {
-    if (!draft) return;
-    const handleClick = (event: MouseEvent) => {
-      if (!draftRowRef.current) return;
-      if (draftRowRef.current.contains(event.target as Node)) return;
-      suppressClickRef.current = true;
-      window.setTimeout(() => {
-        suppressClickRef.current = false;
-      }, 0);
-      void saveDraft();
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-    };
-  }, [draft, saveDraft]);
-
-  useEffect(() => {
     if (!editing) return;
     const handleClick = (event: MouseEvent) => {
       if (!editRowRef.current) return;
@@ -536,9 +496,12 @@ const handleTaskClick = async (task: Task) => {
         (item) => item.date === today && eveningMap[item.id]
       );
       const rest = state.items.filter((item) => !eveningMap[item.id] || item.date !== today);
-      return { groups: buildTaskGroups(rest, projects, areas), evening: eveningItems };
+      return {
+        groups: buildTaskGroups(rest, projects, areas, view),
+        evening: sortDatedByDateAscThenCreatedDesc(eveningItems),
+      };
     }
-    return { groups: buildTaskGroups(state.items, projects, areas), evening: [] as Task[] };
+  return { groups: buildTaskGroups(state.items, projects, areas, view), evening: [] as Task[] };
   }, [state, needsGrouping, projects, areas, view, today, eveningMap]);
 
   const upcomingGroups = useMemo(() => {
@@ -571,98 +534,7 @@ const handleTaskClick = async (task: Task) => {
         )}
         <div className="view-card full">
           <div className="toolbar" />
-          {draft && (
-            <div
-              className={`task-row editing${isDraftClosing ? " closing" : ""}`}
-              ref={draftRowRef}
-            >
-              <div className="task-main">
-                <div className="task-title-row">
-                  <span className="checkbox-shell" aria-hidden />
-                  <input
-                    className="title-input"
-                    value={draft.title}
-                    onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-                    placeholder="Title"
-                  onFocus={handleFocus}
-                  />
-                </div>
-                <textarea
-                  className="note-input draft-offset"
-                  value={draft.note}
-                  onChange={(e) => setDraft({ ...draft, note: e.target.value })}
-                  placeholder="Note (optional)"
-                  rows={3}
-                onFocus={handleFocus}
-                />
-                <div className="schedule draft-offset">
-                    {getDraftLabel(draft, today) ? (
-                      <button
-                        className="schedule-label-button"
-                        onClick={() => setIsScheduleOpen((open) => !open)}
-                      >
-                      <DateBadge label={getDraftLabel(draft, today)} />
-                      </button>
-                    ) : (
-                      <span />
-                    )}
-                  <div className="icon-row">
-                    {!getDraftLabel(draft, today) && (
-                      <button
-                        className="icon-button"
-                        onClick={() => setIsScheduleOpen((open) => !open)}
-                      >
-                        <CalendarIcon />
-                      </button>
-                    )}
-                    <button className="icon-button" type="button">
-                      <ChecklistIcon />
-                    </button>
-                  </div>
-                </div>
-                <div className={`schedule-panel draft-offset ${isScheduleOpen ? "is-open" : ""}`}>
-                    <button
-                      className="pill ghost"
-                      onClick={() => {
-                        setDraft({ ...draft, date: today, someday: false, evening: false });
-                        setIsScheduleOpen(false);
-                      }}
-                    >
-                      Today
-                    </button>
-                    <button
-                      className="pill ghost"
-                      onClick={() => {
-                        setDraft({ ...draft, date: today, someday: false, evening: true });
-                        setIsScheduleOpen(false);
-                      }}
-                    >
-                      <MoonIcon />
-                      This Evening
-                    </button>
-                    <InlineCalendar
-                      selectedDate={draft.someday ? "" : draft.date}
-                      today={today}
-                      onSelect={(date) => {
-                        setDraft({ ...draft, date, someday: false, evening: false });
-                        setIsScheduleOpen(false);
-                      }}
-                    />
-                    <button
-                      className="pill ghost"
-                      onClick={() => {
-                        setDraft({ ...draft, date: "", someday: true, evening: false });
-                        setIsScheduleOpen(false);
-                      }}
-                    >
-                      <SparkIcon />
-                      Someday
-                    </button>
-                  </div>
-                {formMessage && <span className="error">{formMessage}</span>}
-              </div>
-            </div>
-          )}
+          {createMessage && <p className="error">{createMessage}</p>}
           {state.status === "error" && <p className="error">{state.message}</p>}
           {state.status === "loading" && <p className="muted">Loading...</p>}
           {state.status === "idle" && <p className="muted">No data yet.</p>}
@@ -689,6 +561,7 @@ const handleTaskClick = async (task: Task) => {
                       <TaskList
                         items={group.items}
                         editing={editing}
+                        isLocked={isLocked}
                         isLogbook={isLogbook}
                         today={today}
                         eveningMap={eveningMap}
@@ -718,6 +591,7 @@ const handleTaskClick = async (task: Task) => {
                       <TaskList
                         items={groupedCards.evening}
                         editing={editing}
+                        isLocked={isLocked}
                         isLogbook={isLogbook}
                         today={today}
                         eveningMap={eveningMap}
@@ -755,6 +629,7 @@ const handleTaskClick = async (task: Task) => {
                       <TaskList
                         items={group.items}
                         editing={editing}
+                        isLocked={isLocked}
                         isLogbook={isLogbook}
                         today={today}
                         eveningMap={eveningMap}
@@ -792,6 +667,7 @@ const handleTaskClick = async (task: Task) => {
                       <TaskList
                         items={group.items}
                         editing={editing}
+                        isLocked={isLocked}
                         isLogbook={isLogbook}
                         today={today}
                         eveningMap={eveningMap}
@@ -820,8 +696,9 @@ const handleTaskClick = async (task: Task) => {
 
               {!needsGrouping && view !== "upcoming" && view !== "logbook" && (
                 <TaskList
-                  items={state.items}
+                  items={view === "someday" ? sortDatedByDateAscThenCreatedDesc(state.items) : sortMixedByDateAndCreated(state.items)}
                   editing={editing}
+                  isLocked={isLocked}
                   isLogbook={isLogbook}
                   today={today}
                   eveningMap={eveningMap}
@@ -848,7 +725,12 @@ const handleTaskClick = async (task: Task) => {
           )}
         </div>
         {!isLogbook && (
-          <button className="fab-add" onClick={openDraft} aria-label="Add task">
+          <button
+            className="fab-add"
+            onClick={createTaskAndEdit}
+            aria-label="Add task"
+            disabled={!canFetch || isLocked}
+          >
             +
           </button>
         )}
@@ -887,6 +769,7 @@ const handleTaskClick = async (task: Task) => {
 type TaskListProps = {
   items: Task[];
   editing: Editing | null;
+  isLocked: boolean;
   isLogbook: boolean;
   today: string;
   eveningMap: Record<string, boolean>;
@@ -912,6 +795,7 @@ type TaskListProps = {
 function TaskList({
   items,
   editing,
+  isLocked,
   isLogbook,
   today,
   eveningMap,
@@ -938,6 +822,7 @@ function TaskList({
     <div className="task-list">
       {items.map((item) => {
         const isEditing = editing?.id === item.id;
+        const isDisabled = isLocked && !isEditing;
         if (isEditing && editing) {
           return (
             <div
@@ -1013,18 +898,18 @@ function TaskList({
                       tabIndex={isEditReady ? 0 : -1}
                     />
                   <div className="schedule draft-offset">
-                    {getDraftLabel(editing, today) ? (
+                    {getScheduleLabel(editing, today) ? (
                       <button
                         className="schedule-label-button"
                         onClick={() => setIsEditScheduleOpen(!isEditScheduleOpen)}
                       >
-                        <DateBadge label={getDraftLabel(editing, today)} />
+                        <DateBadge label={getScheduleLabel(editing, today)} />
                       </button>
                     ) : (
                       <span />
                     )}
                     <div className="icon-row">
-                      {!getDraftLabel(editing, today) && (
+                      {!getScheduleLabel(editing, today) && (
                         <button
                           className="icon-button"
                           onClick={() => setIsEditScheduleOpen(!isEditScheduleOpen)}
@@ -1085,8 +970,12 @@ function TaskList({
         return (
           <div
             key={item.id}
-            className={`task-row clickable ${item.completedAt ? "completed" : ""}`}
-            onClick={() => onEdit(item)}
+            className={`task-row clickable ${item.completedAt ? "completed" : ""}${isDisabled ? " is-disabled" : ""}`}
+            aria-disabled={isDisabled}
+            onClick={() => {
+              if (isDisabled) return;
+              onEdit(item);
+            }}
           >
             <div className="task-header">
               <div className="task-main">
@@ -1100,7 +989,7 @@ function TaskList({
                         e.stopPropagation();
                         onToggleComplete(item);
                       }}
-                      disabled={isLogbook}
+                      disabled={isLogbook || isDisabled}
                     />
                   </label>
                 <div>
@@ -1161,7 +1050,7 @@ function TaskDateBadge({
   return <DateBadge label={label} />;
 }
 
-function buildTaskGroups(items: Task[], projects: ProjectRef[], areas: AreaRef[]) {
+function buildTaskGroups(items: Task[], projects: ProjectRef[], areas: AreaRef[], view: string) {
   const projectOrder = new Map(projects.map((p, index) => [p.id, index]));
   const areaOrder = new Map(areas.map((a, index) => [a.id, index]));
   const projectGroups = new Map<string, { title: string; items: Task[] }>();
@@ -1196,11 +1085,7 @@ function buildTaskGroups(items: Task[], projects: ProjectRef[], areas: AreaRef[]
     href?: string;
   }> = [];
   if (noGroup.length > 0) {
-    const sortedNoGroup = [...noGroup].sort((a, b) => {
-      const aTime = a.createdAt ? Date.parse(a.createdAt) : 0;
-      const bTime = b.createdAt ? Date.parse(b.createdAt) : 0;
-      return bTime - aTime;
-    });
+    const sortedNoGroup = view === "someday" ? sortDatedByDateAscThenCreatedDesc(noGroup) : sortMixedByDateAndCreated(noGroup);
     sections.push({ key: "nogroup", title: null, items: sortedNoGroup });
   }
 
@@ -1213,7 +1098,14 @@ function buildTaskGroups(items: Task[], projects: ProjectRef[], areas: AreaRef[]
     return aOrder - bOrder;
   });
   for (const [id, group] of sortedProjects) {
-    sections.push({ key: `project-${id}`, title: group.title, items: group.items, kind: "project", href: `/projects/${id}` });
+    const items = view === "someday" ? sortDatedByDateAscThenCreatedDesc(group.items) : sortMixedByDateAndCreated(group.items);
+    sections.push({
+      key: `project-${id}`,
+      title: group.title,
+      items,
+      kind: "project",
+      href: `/projects/${id}`,
+    });
   }
 
   const sortedAreas = [...areaGroups.entries()].sort(([a], [b]) => {
@@ -1225,7 +1117,14 @@ function buildTaskGroups(items: Task[], projects: ProjectRef[], areas: AreaRef[]
     return aOrder - bOrder;
   });
   for (const [id, group] of sortedAreas) {
-    sections.push({ key: `area-${id}`, title: group.title, items: group.items, kind: "area", href: `/areas/${id}` });
+    const items = view === "someday" ? sortDatedByDateAscThenCreatedDesc(group.items) : sortMixedByDateAndCreated(group.items);
+    sections.push({
+      key: `area-${id}`,
+      title: group.title,
+      items,
+      kind: "area",
+      href: `/areas/${id}`,
+    });
   }
 
   return sections;

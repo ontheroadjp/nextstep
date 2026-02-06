@@ -29,7 +29,10 @@ export async function POST(request: Request): Promise<Response> {
   const body = await readJson<TaskCreateInput>(request);
   if (body instanceof Response) return body;
 
-  if (!nonEmptyString(body.title)) {
+  if (body.title !== undefined && typeof body.title !== "string") {
+    return error("bad_request", "title must be string", 400);
+  }
+  if (body.title === undefined || !nonEmptyString(body.title)) {
     return error("bad_request", "title is required", 400);
   }
   if (body.note !== undefined && typeof body.note !== "string") {
@@ -67,11 +70,12 @@ export async function POST(request: Request): Promise<Response> {
     }
   }
 
+  const title = body.title.trim();
   const { data, error: insertError } = await supabase
     .from("tasks")
     .insert({
       user_id: userId,
-      title: body.title.trim(),
+      title,
       note: body.note?.trim() ?? "",
       date: normalized.date ?? null,
       someday: normalized.someday ?? false,
@@ -79,7 +83,7 @@ export async function POST(request: Request): Promise<Response> {
       project_id: body.projectId ?? null,
     })
     .select(
-      "id,title,note,date,someday,completed_at,archived_at,area_id,project_id,sort_key,checklists(id,title,completed,sort_key)"
+      "id,title,note,date,someday,completed_at,archived_at,created_at,area_id,project_id,sort_key,checklists(id,title,completed,sort_key)"
     )
     .single();
 

@@ -44,6 +44,7 @@ describe("mapTask", () => {
       someday: false,
       completedAt: null,
       archivedAt: null,
+      createdAt: null,
       areaId: "a1",
       projectId: "p1",
       sortKey: "a",

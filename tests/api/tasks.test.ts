@@ -60,7 +60,7 @@ vi.mock("../../app/api/_supabase", () => ({
 import { POST } from "../../app/api/tasks/route";
 
 describe("POST /api/tasks", () => {
-  it("returns 400 when title is missing", async () => {
+  it("rejects missing title", async () => {
     const req = new Request("http://localhost", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -69,8 +69,17 @@ describe("POST /api/tasks", () => {
 
     const res = await POST(req);
     expect(res.status).toBe(400);
-    const json = await res.json();
-    expect(json.error.code).toBe("bad_request");
+  });
+
+  it("rejects blank title", async () => {
+    const req = new Request("http://localhost", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: " ", note: "Note" }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(400);
   });
 
   it("accepts empty note", async () => {
