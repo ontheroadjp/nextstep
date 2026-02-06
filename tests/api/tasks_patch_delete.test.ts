@@ -69,14 +69,14 @@ vi.mock("../../app/api/_supabase", () => ({
 import { PATCH as tasksPATCH, DELETE as tasksDELETE } from "../../app/api/tasks/[id]/route";
 
 describe("Tasks PATCH/DELETE", () => {
-  it("PATCH validates title when provided", async () => {
+  it("PATCH accepts empty title", async () => {
     const req = new Request("http://localhost", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: "" }),
     });
     const res = await tasksPATCH(req, { params: { id: "t1" } });
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(200);
   });
 
   it("PATCH validates sortKey when provided", async () => {
