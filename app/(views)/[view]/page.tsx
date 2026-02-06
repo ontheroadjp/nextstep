@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import { sortDatedByDateAscThenCreatedDesc, sortMixedByDateAndCreated } from "../../_lib/task_sort";
 
 type Task = {
   id: string;
@@ -199,8 +200,14 @@ export default function ViewPage() {
     let initialSomeday = false;
     if (view === "today") initialDate = today;
     if (view === "someday") initialSomeday = true;
+    const defaultTitle = "新規タスク";
+    if (!defaultTitle.trim()) {
+      setCreateMessage("タイトルを入力してください");
+      createSavingRef.current = false;
+      return;
+    }
     const payload: Record<string, unknown> = {
-      title: "",
+      title: defaultTitle,
       note: "",
       date: initialSomeday ? null : initialDate || null,
       someday: initialSomeday,
@@ -269,6 +276,10 @@ export default function ViewPage() {
   const saveEdit = async (): Promise<boolean> => {
     if (!editing || savingEditRef.current || !token.trim()) return false;
     if (!editTouchedRef.current) return false;
+    if (!editing.title.trim()) {
+      setEditMessage("タイトルを入力してください");
+      return false;
+    }
     savingEditRef.current = true;
     setEditMessage(null);
     const payload: Record<string, unknown> = {
@@ -485,9 +496,12 @@ const handleTaskClick = async (task: Task) => {
         (item) => item.date === today && eveningMap[item.id]
       );
       const rest = state.items.filter((item) => !eveningMap[item.id] || item.date !== today);
-      return { groups: buildTaskGroups(rest, projects, areas), evening: eveningItems };
+      return {
+        groups: buildTaskGroups(rest, projects, areas, view),
+        evening: sortDatedByDateAscThenCreatedDesc(eveningItems),
+      };
     }
-    return { groups: buildTaskGroups(state.items, projects, areas), evening: [] as Task[] };
+  return { groups: buildTaskGroups(state.items, projects, areas, view), evening: [] as Task[] };
   }, [state, needsGrouping, projects, areas, view, today, eveningMap]);
 
   const upcomingGroups = useMemo(() => {
@@ -682,7 +696,7 @@ const handleTaskClick = async (task: Task) => {
 
               {!needsGrouping && view !== "upcoming" && view !== "logbook" && (
                 <TaskList
-                  items={state.items}
+                  items={view === "someday" ? sortDatedByDateAscThenCreatedDesc(state.items) : sortMixedByDateAndCreated(state.items)}
                   editing={editing}
                   isLocked={isLocked}
                   isLogbook={isLogbook}
@@ -1036,7 +1050,7 @@ function TaskDateBadge({
   return <DateBadge label={label} />;
 }
 
-function buildTaskGroups(items: Task[], projects: ProjectRef[], areas: AreaRef[]) {
+function buildTaskGroups(items: Task[], projects: ProjectRef[], areas: AreaRef[], view: string) {
   const projectOrder = new Map(projects.map((p, index) => [p.id, index]));
   const areaOrder = new Map(areas.map((a, index) => [a.id, index]));
   const projectGroups = new Map<string, { title: string; items: Task[] }>();
@@ -1071,11 +1085,7 @@ function buildTaskGroups(items: Task[], projects: ProjectRef[], areas: AreaRef[]
     href?: string;
   }> = [];
   if (noGroup.length > 0) {
-    const sortedNoGroup = [...noGroup].sort((a, b) => {
-      const aTime = a.createdAt ? Date.parse(a.createdAt) : 0;
-      const bTime = b.createdAt ? Date.parse(b.createdAt) : 0;
-      return bTime - aTime;
-    });
+    const sortedNoGroup = view === "someday" ? sortDatedByDateAscThenCreatedDesc(noGroup) : sortMixedByDateAndCreated(noGroup);
     sections.push({ key: "nogroup", title: null, items: sortedNoGroup });
   }
 
@@ -1088,7 +1098,14 @@ function buildTaskGroups(items: Task[], projects: ProjectRef[], areas: AreaRef[]
     return aOrder - bOrder;
   });
   for (const [id, group] of sortedProjects) {
-    sections.push({ key: `project-${id}`, title: group.title, items: group.items, kind: "project", href: `/projects/${id}` });
+    const items = view === "someday" ? sortDatedByDateAscThenCreatedDesc(group.items) : sortMixedByDateAndCreated(group.items);
+    sections.push({
+      key: `project-${id}`,
+      title: group.title,
+      items,
+      kind: "project",
+      href: `/projects/${id}`,
+    });
   }
 
   const sortedAreas = [...areaGroups.entries()].sort(([a], [b]) => {
@@ -1100,7 +1117,14 @@ function buildTaskGroups(items: Task[], projects: ProjectRef[], areas: AreaRef[]
     return aOrder - bOrder;
   });
   for (const [id, group] of sortedAreas) {
-    sections.push({ key: `area-${id}`, title: group.title, items: group.items, kind: "area", href: `/areas/${id}` });
+    const items = view === "someday" ? sortDatedByDateAscThenCreatedDesc(group.items) : sortMixedByDateAndCreated(group.items);
+    sections.push({
+      key: `area-${id}`,
+      title: group.title,
+      items,
+      kind: "area",
+      href: `/areas/${id}`,
+    });
   }
 
   return sections;

@@ -29,6 +29,7 @@
 
 ## Task 作成・更新
 - `title` は必須、`note` は任意。
+- 新規作成時のデフォルトタイトルは「新規タスク」。
 - `someday = true` の場合 `date = null` に正規化。
 - `date` が設定された場合 `someday = false` に正規化。
 - `areaId` / `projectId` は所有チェックを行う。
@@ -36,6 +37,14 @@
 - `projectId` に紐づく `area_id` があり、`areaId` 未指定の場合は補完される。
 
 根拠: `app/api/tasks/route.ts`, `app/api/tasks/[id]/route.ts`, `app/api/_helpers.ts`
+
+## Task 一覧 UI の並び順
+- Upcoming: 日付昇順（変更なし）
+- Logbook: 完了日（`archived_at`）降順（変更なし）
+- Today: Project/Area/No Group の順で表示し、その後に This Evening を表示
+- Inbox/Anytime/Someday/Area/Project: 日付なし → 日付ありの順で並べ、日付なしは `created_at` 降順、日付ありは `date` 昇順 + `created_at` 降順
+
+根拠: `app/(views)/[view]/page.tsx`, `app/areas/[areaId]/page.tsx`, `app/projects/[projectId]/page.tsx`
 
 ## Project / Area / Checklist
 - Project: `name` / `note` 必須。

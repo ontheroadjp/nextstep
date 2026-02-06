@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import { sortMixedByDateAndCreated } from "../../_lib/task_sort";
 
 type Task = {
   id: string;
@@ -148,8 +149,14 @@ export default function AreaPage() {
     if (!token.trim() || createSavingRef.current || isLocked) return;
     createSavingRef.current = true;
     setCreateMessage(null);
+    const defaultTitle = "新規タスク";
+    if (!defaultTitle.trim()) {
+      setCreateMessage("タイトルを入力してください");
+      createSavingRef.current = false;
+      return;
+    }
     const payload: Record<string, unknown> = {
-      title: "",
+      title: defaultTitle,
       note: "",
       date: null,
       someday: false,
@@ -215,6 +222,10 @@ export default function AreaPage() {
   const saveEdit = async (): Promise<boolean> => {
     if (!editing || savingEditRef.current || !token.trim()) return false;
     if (!editTouchedRef.current) return false;
+    if (!editing.title.trim()) {
+      setEditMessage("タイトルを入力してください");
+      return false;
+    }
     savingEditRef.current = true;
     setEditMessage(null);
     const payload: Record<string, unknown> = {
@@ -408,25 +419,25 @@ const handleTaskClick = async (task: Task) => {
           {state.status === "loading" && <p className="muted">Loading...</p>}
           {state.status === "idle" && <p className="muted">No data yet.</p>}
           {state.status === "ready" && (
-              <TaskList
-                items={state.tasks}
-                editing={editing}
-                isLocked={isLocked}
-                today={today}
-                eveningMap={eveningMap}
-                isEditScheduleOpen={isEditScheduleOpen}
-                setIsEditScheduleOpen={setIsEditScheduleOpen}
-                editRowRef={editRowRef}
-                isClosing={isClosing}
-                isOpening={isOpening}
-                isEditReady={isEditReady}
-                setIsEditReady={setIsEditReady}
-                onInputFocus={handleFocus}
-                onEdit={handleTaskClick}
-                onEditChange={handleEditChange}
-                onToggleComplete={toggleComplete}
-                onDelete={handleDelete}
-                editMessage={editMessage}
+            <TaskList
+              items={sortMixedByDateAndCreated(state.tasks)}
+              editing={editing}
+              isLocked={isLocked}
+              today={today}
+              eveningMap={eveningMap}
+              isEditScheduleOpen={isEditScheduleOpen}
+              setIsEditScheduleOpen={setIsEditScheduleOpen}
+              editRowRef={editRowRef}
+              isClosing={isClosing}
+              isOpening={isOpening}
+              isEditReady={isEditReady}
+              setIsEditReady={setIsEditReady}
+              onInputFocus={handleFocus}
+              onEdit={handleTaskClick}
+              onEditChange={handleEditChange}
+              onToggleComplete={toggleComplete}
+              onDelete={handleDelete}
+              editMessage={editMessage}
             />
           )}
         </div>
