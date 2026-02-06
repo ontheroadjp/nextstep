@@ -1,4 +1,5 @@
 bk_*
+temp_for_ai
 .env
 .next
 node_modules
