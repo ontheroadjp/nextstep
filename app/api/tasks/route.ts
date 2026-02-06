@@ -32,6 +32,9 @@ export async function POST(request: Request): Promise<Response> {
   if (body.title !== undefined && typeof body.title !== "string") {
     return error("bad_request", "title must be string", 400);
   }
+  if (body.title === undefined || !nonEmptyString(body.title)) {
+    return error("bad_request", "title is required", 400);
+  }
   if (body.note !== undefined && typeof body.note !== "string") {
     return error("bad_request", "note must be string", 400);
   }
@@ -67,7 +70,7 @@ export async function POST(request: Request): Promise<Response> {
     }
   }
 
-  const title = typeof body.title === "string" ? body.title.trim() : "";
+  const title = body.title.trim();
   const { data, error: insertError } = await supabase
     .from("tasks")
     .insert({
@@ -80,7 +83,7 @@ export async function POST(request: Request): Promise<Response> {
       project_id: body.projectId ?? null,
     })
     .select(
-      "id,title,note,date,someday,completed_at,archived_at,area_id,project_id,sort_key,checklists(id,title,completed,sort_key)"
+      "id,title,note,date,someday,completed_at,archived_at,created_at,area_id,project_id,sort_key,checklists(id,title,completed,sort_key)"
     )
     .single();
 

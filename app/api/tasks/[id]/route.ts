@@ -40,6 +40,9 @@ export async function PATCH(
   if (body.title !== undefined && typeof body.title !== "string") {
     return error("bad_request", "title must be string", 400);
   }
+  if (body.title !== undefined && !nonEmptyString(body.title)) {
+    return error("bad_request", "title must be non-empty", 400);
+  }
   if (body.note !== undefined && typeof body.note !== "string") {
     return error("bad_request", "note must be string", 400);
   }
