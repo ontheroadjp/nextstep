@@ -40,6 +40,21 @@ export async function apiFetch(path: string, token: string, init: RequestInit = 
   return fetch(url.toString(), { ...init, headers });
 }
 
+export async function apiFetchTimed(
+  label: string,
+  path: string,
+  token: string,
+  init: RequestInit = {}
+) {
+  const start = Date.now();
+  const response = await apiFetch(path, token, init);
+  const elapsedMs = Date.now() - start;
+  console.info(
+    `[integration-timing] ${label} ${init.method ?? "GET"} ${path} -> ${response.status} (${elapsedMs}ms)`
+  );
+  return response;
+}
+
 export async function cleanup(prefix: string, token: string) {
   const base = requireEnv("SUPABASE_URL").replace(/\/$/, "");
   const rest = `${base}/rest/v1`;

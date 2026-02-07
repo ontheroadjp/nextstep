@@ -1,6 +1,13 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { loadDotEnvIfNeeded } from "./_helpers/env";
-import { apiFetch, cleanup, getAccessToken, makePrefix, requireEnv } from "./_helpers/api";
+import {
+  apiFetch,
+  apiFetchTimed,
+  cleanup,
+  getAccessToken,
+  makePrefix,
+  requireEnv,
+} from "./_helpers/api";
 
 const isEnabled = Boolean(process.env.INTEGRATION_TEST);
 
@@ -55,7 +62,7 @@ suite("integration api rls/logbook", () => {
     const token = await getAccessToken(TEST_EMAIL, TEST_PASSWORD);
     const today = new Date().toISOString().slice(0, 10);
 
-    const taskRes = await apiFetch("/api/tasks", token, {
+    const taskRes = await apiFetchTimed("logbook:create-task", "/api/tasks", token, {
       method: "POST",
       body: JSON.stringify({
         title: `${prefix}Task`,
@@ -68,38 +75,43 @@ suite("integration api rls/logbook", () => {
     const taskJson = await taskRes.json();
     const taskId = taskJson.item.id as string;
 
-    const completeRes = await apiFetch(`/api/tasks/${taskId}`, token, {
-      method: "PATCH",
-      body: JSON.stringify({ completedAt: new Date().toISOString() }),
-    });
+    const completeRes = await apiFetchTimed(
+      "logbook:complete-task",
+      `/api/tasks/${taskId}`,
+      token,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ completedAt: new Date().toISOString() }),
+      }
+    );
     expect(completeRes.status).toBe(200);
 
-    const todayRes = await apiFetch("/api/today", token, {
+    const todayRes = await apiFetchTimed("logbook:today-before-archive", "/api/today", token, {
       headers: { "x-tz-offset-minutes": "540" },
     });
     expect(todayRes.status).toBe(200);
     const todayJson = await todayRes.json();
     expect(todayJson.items.some((t: { title: string }) => t.title.includes(prefix))).toBe(true);
 
-    const logbookRes = await apiFetch("/api/logbook", token);
+    const logbookRes = await apiFetchTimed("logbook:list-before-archive", "/api/logbook", token);
     expect(logbookRes.status).toBe(200);
     const logbookJson = await logbookRes.json();
     expect(logbookJson.items.some((t: { title: string }) => t.title.includes(prefix))).toBe(false);
 
-    const archiveRes = await apiFetch(`/api/tasks/${taskId}`, token, {
+    const archiveRes = await apiFetchTimed("logbook:archive-task", `/api/tasks/${taskId}`, token, {
       method: "PATCH",
       body: JSON.stringify({ archivedAt: new Date().toISOString() }),
     });
     expect(archiveRes.status).toBe(200);
 
-    const todayRes2 = await apiFetch("/api/today", token, {
+    const todayRes2 = await apiFetchTimed("logbook:today-after-archive", "/api/today", token, {
       headers: { "x-tz-offset-minutes": "540" },
     });
     expect(todayRes2.status).toBe(200);
     const todayJson2 = await todayRes2.json();
     expect(todayJson2.items.some((t: { title: string }) => t.title.includes(prefix))).toBe(false);
 
-    const logbookRes2 = await apiFetch("/api/logbook", token);
+    const logbookRes2 = await apiFetchTimed("logbook:list-after-archive", "/api/logbook", token);
     expect(logbookRes2.status).toBe(200);
     const logbookJson2 = await logbookRes2.json();
     expect(logbookJson2.items.some((t: { title: string }) => t.title.includes(prefix))).toBe(true);
