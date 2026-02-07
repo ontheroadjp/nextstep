@@ -652,7 +652,10 @@ const handleTaskClick = async (task: Task) => {
               {needsGrouping && (
                 <div className="grouped-grid">
                   {groupedCards.groups.map((group) => (
-                    <div key={group.key} className="group-card">
+                    <div
+                      key={group.key}
+                      className={`group-card${group.key === "nogroup" ? " no-group-card" : ""}`}
+                    >
                       {group.title && (
                         <div className={`group-header${isLocked ? " is-disabled" : ""}`}>
                           {group.href ? (
