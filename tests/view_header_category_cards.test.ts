@@ -28,4 +28,8 @@ describe("view page header category cards", () => {
     expect(source).toContain('title: "Logbook"');
     expect(source).toContain('title: "Inbox"');
   });
+
+  it("adds a no-group class for unassigned task section", () => {
+    expect(source).toContain('group.key === "nogroup" ? " no-group-card" : ""');
+  });
 });

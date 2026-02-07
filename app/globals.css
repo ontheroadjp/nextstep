@@ -409,6 +409,10 @@ button:not(:disabled):hover {
   font-weight: 400;
 }
 
+.group-card.no-group-card .task-row {
+  padding-left: 0;
+}
+
 .footer-panel {
   padding: 0 min(6vw, 72px) 72px;
   display: grid;

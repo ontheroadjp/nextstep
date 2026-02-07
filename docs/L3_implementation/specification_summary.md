@@ -68,6 +68,7 @@
 - 各ビューは `/api/{view}` を取得して表示。
 - `app/(views)/[view]/page.tsx` の各カテゴリ画面では、`PageMidHeader` 直下に「現在の view に対応する単一の `CategoryCard`」を表示する。
 - 上記 `CategoryCard` は `PageMidHeader` の直下でスクロール追従（sticky）し、Today/Inbox の場合はダッシュボード同様の detail（Overdue/Today, Overdue/Others）を表示する。
+- `app/(views)/[view]/page.tsx` の No Group セクション（area/project 未所属タスク）は、専用クラスでタスク行左余白を調整し、Project/Area 見出しアイコンの左端と揃える。
 - Access Token と TZ Offset は `localStorage` に保存する。
 - Access Token 入力欄には `Refresh` と `Clear` があり、`Clear` で入力中トークンを空にできる。
 - 画面横断で再利用する UI は `app/_components` に集約する（`CategoryCard`, `PageHero`, `PageMidHeader`, `AccessSettingsFooter`）。
