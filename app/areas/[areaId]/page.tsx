@@ -454,16 +454,21 @@ const handleTaskClick = async (task: Task) => {
     state.status === "ready"
       ? state.tasks.filter((t) => t.completedAt && !t.archivedAt).length
       : 0;
+  const pageTitle = state.status === "ready" ? state.item.name : "Area";
 
   return (
     <main>
       <div className="hero page">
         <div>
           <p className="eyebrow">Area</p>
-          <h1>{state.status === "ready" ? state.item.name : "Area"}</h1>
+          <h1>{pageTitle}</h1>
           <p className="lead">詳細UIは後で調整します。今は一覧だけ確認できます。</p>
         </div>
       </div>
+
+      <section className="page-mid-header">
+        <h1><a className="page-mid-header-link" href="/"><i className="fa-solid fa-arrow-circle-left" aria-hidden="true" /> {pageTitle}</a></h1>
+      </section>
 
       <section className="grid">
         {completedCount > 0 && (

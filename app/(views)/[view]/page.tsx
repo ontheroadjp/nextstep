@@ -574,16 +574,21 @@ const handleTaskClick = async (task: Task) => {
     const offset = Number(tzOffset);
     return buildLogbookGroups(state.items, today, Number.isFinite(offset) ? offset : 0);
   }, [state, today, tzOffset]);
+  const pageTitle = view.toUpperCase();
 
   return (
     <main>
       <div className="hero page">
         <div>
           <p className="eyebrow">Category</p>
-          <h1>{view.toUpperCase()}</h1>
+          <h1>{pageTitle}</h1>
           <p className="lead">詳細UIは後で調整します。今は一覧だけ確認できます。</p>
         </div>
       </div>
+
+      <section className="page-mid-header">
+        <h1><a className="page-mid-header-link" href="/"><i className="fa-solid fa-arrow-circle-left" aria-hidden="true" /> {pageTitle}</a></h1>
+      </section>
 
       <section className="grid">
         {!isLogbook && completedCount > 0 && (

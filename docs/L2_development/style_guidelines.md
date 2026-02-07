@@ -105,10 +105,11 @@
 根拠: `app/page.tsx`, `app/globals.css`
 
 ### View（`app/(views)/[view]/page.tsx`）
-- セクション構成: `.hero.page` + `.grid` + `.footer-panel`
+- セクション構成: `.hero.page` + `.page-mid-header` + `.grid` + `.footer-panel`
 - 一覧/カード: `.view-card.full`, `.task-list`, `.grouped-grid`, `.group-card`, `.group-list`, `.date-group`
 - 入力/編集: `.title-input`, `.note-input`, `.task-details`, `.task-details-inner`
 - 追加/操作: `.fab-add`, `.logbook-stack-button`, `.icon-button`, `.pill`, `.toolbar`
+- 中間ヘッダー: `.page-mid-header`（固定表示）, `.page-mid-header-link`（トップページリンク）
 - 日付/スケジュール: `.schedule`, `.schedule-label-button`, `.date-badge`
 - カレンダー: `.calendar`, `.calendar-header`, `.calendar-grid`
 - カレンダー: 今日セルは `Today` アイコンのみ表示（テキストなし）、過去日は非表示
@@ -117,20 +118,22 @@
 根拠: `app/(views)/[view]/page.tsx`, `app/globals.css`
 
 ### Area（`app/areas/[areaId]/page.tsx`）
-- セクション構成: `.hero.page` + `.grid` + `.footer-panel`
+- セクション構成: `.hero.page` + `.page-mid-header` + `.grid` + `.footer-panel`
 - 一覧/カード: `.view-card.full`, `.task-list`
 - 入力/編集: `.title-input`, `.note-input`, `.task-details`, `.task-details-inner`
 - 追加/操作: `.fab-add`, `.logbook-stack-button`, `.icon-button`, `.pill`, `.toolbar`
+- 中間ヘッダー: `.page-mid-header`（固定表示）, `.page-mid-header-link`（トップページリンク）
 - 日付/スケジュール: `.schedule`, `.schedule-label-button`, `.date-badge`
 - カレンダー: `.calendar`, `.calendar-header`, `.calendar-grid`
 
 根拠: `app/areas/[areaId]/page.tsx`, `app/globals.css`
 
 ### Project（`app/projects/[projectId]/page.tsx`）
-- セクション構成: `.hero.page` + `.grid` + `.footer-panel`
+- セクション構成: `.hero.page` + `.page-mid-header` + `.grid` + `.footer-panel`
 - 一覧/カード: `.view-card.full`, `.task-list`
 - 入力/編集: `.title-input`, `.note-input`, `.task-details`, `.task-details-inner`
 - 追加/操作: `.fab-add`, `.logbook-stack-button`, `.icon-button`, `.pill`, `.toolbar`
+- 中間ヘッダー: `.page-mid-header`（固定表示）, `.page-mid-header-link`（トップページリンク）
 - 日付/スケジュール: `.schedule`, `.schedule-label-button`, `.date-badge`
 - カレンダー: `.calendar`, `.calendar-header`, `.calendar-grid`
 
