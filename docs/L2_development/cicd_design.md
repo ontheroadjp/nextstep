@@ -1,7 +1,7 @@
 # CI/CD Design
 
 ## CI
-- Unit テスト: `npm ci` + `npm run test` (push/PR)
+- 型/Unit テスト: `npm ci` + `npm run typecheck` + `npm run test` (push/PR)
 - Integration テスト: 手動実行 (workflow_dispatch)
 
 根拠: `.github/workflows/tests.yml`, `.github/workflows/integration.yml`

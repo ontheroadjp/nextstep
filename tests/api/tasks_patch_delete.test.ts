@@ -75,7 +75,7 @@ describe("Tasks PATCH/DELETE", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: "" }),
     });
-    const res = await tasksPATCH(req, { params: { id: "t1" } });
+    const res = await tasksPATCH(req, { params: Promise.resolve({ id: "t1" }) });
     expect(res.status).toBe(400);
   });
 
@@ -85,7 +85,7 @@ describe("Tasks PATCH/DELETE", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: " " }),
     });
-    const res = await tasksPATCH(req, { params: { id: "t1" } });
+    const res = await tasksPATCH(req, { params: Promise.resolve({ id: "t1" }) });
     expect(res.status).toBe(400);
   });
 
@@ -95,7 +95,7 @@ describe("Tasks PATCH/DELETE", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sortKey: " " }),
     });
-    const res = await tasksPATCH(req, { params: { id: "t1" } });
+    const res = await tasksPATCH(req, { params: Promise.resolve({ id: "t1" }) });
     expect(res.status).toBe(400);
   });
 
@@ -106,7 +106,7 @@ describe("Tasks PATCH/DELETE", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ areaId: "a1" }),
     });
-    const res = await tasksPATCH(req, { params: { id: "t1" } });
+    const res = await tasksPATCH(req, { params: Promise.resolve({ id: "t1" }) });
     expect(res.status).toBe(400);
     areaExists = true;
   });
@@ -118,7 +118,7 @@ describe("Tasks PATCH/DELETE", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ projectId: "p1", areaId: "a2" }),
     });
-    const res = await tasksPATCH(req, { params: { id: "t1" } });
+    const res = await tasksPATCH(req, { params: Promise.resolve({ id: "t1" }) });
     expect(res.status).toBe(400);
     projectAreaId = null;
   });
@@ -129,12 +129,12 @@ describe("Tasks PATCH/DELETE", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: "Task", note: "Note" }),
     });
-    const res = await tasksPATCH(req, { params: { id: "t1" } });
+    const res = await tasksPATCH(req, { params: Promise.resolve({ id: "t1" }) });
     expect(res.status).toBe(200);
   });
 
   it("DELETE removes item", async () => {
-    const res = await tasksDELETE(new Request("http://localhost"), { params: { id: "t1" } });
+    const res = await tasksDELETE(new Request("http://localhost"), { params: Promise.resolve({ id: "t1" }) });
     expect(res.status).toBe(200);
   });
 });

@@ -43,9 +43,9 @@ describe("route smoke tests", () => {
   });
 
   it("area/project filtered routes return 200", async () => {
-    expect((await areaTodayGET(req, { params: { areaId: "a1" } })).status).toBe(200);
-    expect((await areaUpcomingGET(req, { params: { areaId: "a1" } })).status).toBe(200);
-    expect((await projectTodayGET(req, { params: { projectId: "p1" } })).status).toBe(200);
-    expect((await projectUpcomingGET(req, { params: { projectId: "p1" } })).status).toBe(200);
+    expect((await areaTodayGET(req, { params: Promise.resolve({ areaId: "a1" }) })).status).toBe(200);
+    expect((await areaUpcomingGET(req, { params: Promise.resolve({ areaId: "a1" }) })).status).toBe(200);
+    expect((await projectTodayGET(req, { params: Promise.resolve({ projectId: "p1" }) })).status).toBe(200);
+    expect((await projectUpcomingGET(req, { params: Promise.resolve({ projectId: "p1" }) })).status).toBe(200);
   });
 });

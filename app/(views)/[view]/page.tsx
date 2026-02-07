@@ -792,13 +792,13 @@ type TaskListProps = {
   eveningMap: Record<string, boolean>;
   isEditScheduleOpen: boolean;
   setIsEditScheduleOpen: (open: boolean) => void;
-  editRowRef: React.RefObject<HTMLDivElement>;
+  editRowRef: React.RefObject<HTMLDivElement | null>;
   isClosing: boolean;
   isOpening: boolean;
   isEditReady: boolean;
   setIsEditReady: (ready: boolean) => void;
-  editTitleRef: React.RefObject<HTMLInputElement>;
-  editNoteRef: React.RefObject<HTMLTextAreaElement>;
+  editTitleRef: React.RefObject<HTMLInputElement | null>;
+  editNoteRef: React.RefObject<HTMLTextAreaElement | null>;
   onFocusTarget: (target: "title" | "note") => void;
   onInputFocus: (event: React.FocusEvent<HTMLElement>) => void;
   onBlurSave: () => void;
