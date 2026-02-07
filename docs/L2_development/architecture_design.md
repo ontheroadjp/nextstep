@@ -10,18 +10,23 @@
 ## ディレクトリ構造（主要）
 - `app/`: Next.js App Router の UI と API ルート
 - `app/api/`: JSON API (Route Handlers)
+- `app/_components/`: 画面横断で再利用する UI コンポーネント
+- `app/_hooks/`: `localStorage` 連携など画面横断の React Hook
+- `app/_lib/`: 画面横断のフロントエンドユーティリティ
 - `db/`: PostgreSQL のスキーマ/メンテナンス SQL
 - `docs/`: 仕様/運用ドキュメント
 - `tests/`: Vitest のユニット/統合テスト
 
-根拠: `app/`, `db/`, `docs/`, `tests/`
+根拠: `app/`, `app/_components/`, `app/_hooks/`, `app/_lib/`, `db/`, `docs/`, `tests/`
 
 ## フロントエンド
 - `app/page.tsx`: ダッシュボード（Today/Inbox/Areas の件数やリンク）
 - `app/(views)/[view]/page.tsx`: Today/Upcoming/Anytime/Someday/Logbook/Inbox の一覧画面
 - `app/areas/[areaId]/page.tsx`, `app/projects/[projectId]/page.tsx`: Area/Project の詳細画面
+- 共通 UI は `app/_components/`（`CategoryCard`, `PageHero`, `PageMidHeader`, `AccessSettingsFooter`）に集約
+- 共通状態 Hook は `app/_hooks/useStoredState.ts`、日付系ユーティリティは `app/_lib/date.ts` に集約
 
-根拠: `app/page.tsx`, `app/(views)/[view]/page.tsx`, `app/areas/[areaId]/page.tsx`, `app/projects/[projectId]/page.tsx`
+根拠: `app/page.tsx`, `app/(views)/[view]/page.tsx`, `app/areas/[areaId]/page.tsx`, `app/projects/[projectId]/page.tsx`, `app/_components/AccessSettingsFooter.tsx`, `app/_components/CategoryCard.tsx`, `app/_components/PageHero.tsx`, `app/_components/PageMidHeader.tsx`, `app/_hooks/useStoredState.ts`, `app/_lib/date.ts`
 
 ## バックエンド（API）
 - 認証: `Authorization: Bearer <token>` または `x-access-token` を受け取り、Supabase Auth で検証。
