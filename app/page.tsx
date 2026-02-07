@@ -20,11 +20,11 @@ type Task = {
   projectId: string | null;
 };
 
-type ViewState =
+type DataState<T> =
   | { status: "idle" }
   | { status: "loading" }
   | { status: "error"; message: string }
-  | { status: "ready"; items: Task[] };
+  | { status: "ready"; items: T[] };
 
 type Area = {
   id: string;
@@ -49,9 +49,9 @@ function splitOverdue(items: Task[], today: string) {
 export default function HomePage() {
   const [token, setToken] = useStoredValue("ns-access-token", "");
   const [tzOffset, setTzOffset] = useStoredValue("ns-tz-offset", DEFAULT_TZ_OFFSET);
-  const [today, setToday] = useState<ViewState>({ status: "idle" });
-  const [inbox, setInbox] = useState<ViewState>({ status: "idle" });
-  const [areas, setAreas] = useState<ViewState>({ status: "idle" });
+  const [today, setToday] = useState<DataState<Task>>({ status: "idle" });
+  const [inbox, setInbox] = useState<DataState<Task>>({ status: "idle" });
+  const [areas, setAreas] = useState<DataState<Area>>({ status: "idle" });
 
   const canFetch = token.trim().length > 0;
 
@@ -62,7 +62,7 @@ export default function HomePage() {
     return h;
   }, [token, tzOffset]);
 
-  const fetchView = async (path: string, setter: (state: ViewState) => void) => {
+  const fetchView = async <T,>(path: string, setter: (state: DataState<T>) => void) => {
     setter({ status: "loading" });
     try {
       const res = await fetch(path, { headers });
@@ -71,7 +71,7 @@ export default function HomePage() {
         setter({ status: "error", message: json?.error?.message ?? "Request failed" });
         return;
       }
-      setter({ status: "ready", items: json.items ?? [] });
+      setter({ status: "ready", items: (json.items ?? []) as T[] });
     } catch (err) {
       setter({ status: "error", message: err instanceof Error ? err.message : "Request failed" });
     }
@@ -156,7 +156,7 @@ export default function HomePage() {
           <CategoryCard title="Areas" status="ready" detail="No areas" showDetail />
         )}
         {areas.status === "ready" &&
-          (areas.items as Area[]).map((area) => (
+          areas.items.map((area) => (
             <CategoryCard key={area.id} title={area.name} href={`/areas/${area.id}`} />
           ))}
       </section>

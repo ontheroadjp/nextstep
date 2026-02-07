@@ -10,7 +10,7 @@ type ChecklistCreateInput = {
 
 export async function POST(
   request: Request,
-  context: { params: Promise<{ id: string }> | { id: string } }
+  context: { params: Promise<{ id: string }> }
 ): Promise<Response> {
   const admin = createServerClient();
   const auth = await requireUserContext(admin, request);

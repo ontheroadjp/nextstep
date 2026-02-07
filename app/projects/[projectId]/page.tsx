@@ -147,7 +147,7 @@ export default function ProjectPage() {
         if (prev.status !== "ready") {
           return {
             status: "ready",
-            item: { id: projectId, name: "", areaId: null },
+            item: { id: projectId, name: "", note: null, areaId: null },
             tasks: [item],
           };
         }
