@@ -8,6 +8,7 @@
 根拠: `package.json`, `vitest.config.ts`, `docs/L1/05_testing.md`, `.github/workflows/integration.yml`
 
 ## 実行コマンド
+- `npm run typecheck`
 - `npm run test`
 - `npm run test:integration`
 
@@ -16,7 +17,7 @@
 ## CI 方針
 - GitHub Actions を継続利用
 - 既存 CI を更新する方針（差分は最小）
-- `commands.test` と同一の `npm run test` を CI で実行
+- `commands.test` と同一の `npm run test` に加えて、`npm run typecheck` を CI で実行
 
 根拠: `.github/workflows/tests.yml`, `repo.profile.json`
 

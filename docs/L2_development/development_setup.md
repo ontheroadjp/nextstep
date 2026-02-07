@@ -33,6 +33,7 @@
 根拠: `docs/L1/05_testing.md`, `.github/workflows/integration.yml`
 
 ## テスト
+- TypeScript 型チェック: `npm run typecheck`
 - Unit/Function: `npm run test`
 - Integration: `npm run test:integration`
 
