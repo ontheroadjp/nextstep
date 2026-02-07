@@ -13,10 +13,15 @@ describe("access token clear button", () => {
     "../app/projects/[projectId]/page.tsx",
   ];
 
-  it.each(targets)("adds Clear button next to Refresh in %s", (path) => {
-    const source = read(path);
+  it("defines Clear button behavior in shared footer component", () => {
+    const source = read("../app/_components/AccessSettingsFooter.tsx");
     expect(source).toContain("Refresh");
     expect(source).toContain("Clear");
     expect(source).toContain('onClick={() => setToken("")}');
+  });
+
+  it.each(targets)("uses shared footer component in %s", (path) => {
+    const source = read(path);
+    expect(source).toContain("AccessSettingsFooter");
   });
 });
