@@ -129,7 +129,7 @@ describe("Projects CRUD", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ areaId: "a1" }),
     });
-    const res = await projectPATCH(req, { params: { projectId: "p1" } });
+    const res = await projectPATCH(req, { params: Promise.resolve({ projectId: "p1" }) });
     expect(res.status).toBe(400);
     areaExists = true;
   });
@@ -140,7 +140,7 @@ describe("Projects CRUD", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sortKey: " " }),
     });
-    const res = await projectPATCH(req, { params: { projectId: "p1" } });
+    const res = await projectPATCH(req, { params: Promise.resolve({ projectId: "p1" }) });
     expect(res.status).toBe(400);
   });
 
@@ -150,12 +150,12 @@ describe("Projects CRUD", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: "P2", note: "N2" }),
     });
-    const res = await projectPATCH(req, { params: { projectId: "p1" } });
+    const res = await projectPATCH(req, { params: Promise.resolve({ projectId: "p1" }) });
     expect(res.status).toBe(200);
   });
 
   it("DELETE /api/projects/:id deletes item", async () => {
-    const res = await projectDELETE(new Request("http://localhost"), { params: { projectId: "p1" } });
+    const res = await projectDELETE(new Request("http://localhost"), { params: Promise.resolve({ projectId: "p1" }) });
     expect(res.status).toBe(200);
   });
 });

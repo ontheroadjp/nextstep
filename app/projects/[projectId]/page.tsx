@@ -488,7 +488,7 @@ type TaskListProps = {
   eveningMap: Record<string, boolean>;
   isEditScheduleOpen: boolean;
   setIsEditScheduleOpen: (open: boolean) => void;
-  editRowRef: React.RefObject<HTMLDivElement>;
+  editRowRef: React.RefObject<HTMLDivElement | null>;
   isClosing: boolean;
   isOpening: boolean;
   isEditReady: boolean;

@@ -88,7 +88,7 @@ describe("Areas CRUD", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sortKey: " " }),
     });
-    const res = await areaPATCH(req, { params: { areaId: "a1" } });
+    const res = await areaPATCH(req, { params: Promise.resolve({ areaId: "a1" }) });
     expect(res.status).toBe(400);
   });
 
@@ -98,12 +98,12 @@ describe("Areas CRUD", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: "Area2" }),
     });
-    const res = await areaPATCH(req, { params: { areaId: "a1" } });
+    const res = await areaPATCH(req, { params: Promise.resolve({ areaId: "a1" }) });
     expect(res.status).toBe(200);
   });
 
   it("DELETE /api/areas/:id deletes item", async () => {
-    const res = await areaDELETE(new Request("http://localhost"), { params: { areaId: "a1" } });
+    const res = await areaDELETE(new Request("http://localhost"), { params: Promise.resolve({ areaId: "a1" }) });
     expect(res.status).toBe(200);
   });
 });

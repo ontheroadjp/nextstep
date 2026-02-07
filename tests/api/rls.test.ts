@@ -38,7 +38,7 @@ describe("RLS-style no-row update", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: "New" }),
     });
-    const res = await tasksPATCH(req, { params: { id: "t1" } });
+    const res = await tasksPATCH(req, { params: Promise.resolve({ id: "t1" }) });
     expect(res.status).toBe(404);
   });
 });

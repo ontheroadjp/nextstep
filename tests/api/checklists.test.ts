@@ -48,7 +48,7 @@ describe("Checklists CRUD", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({}),
     });
-    const res = await checklistPOST(req, { params: { id: "t1" } });
+    const res = await checklistPOST(req, { params: Promise.resolve({ id: "t1" }) });
     expect(res.status).toBe(400);
   });
 
@@ -58,7 +58,7 @@ describe("Checklists CRUD", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: "Check", sortKey: " " }),
     });
-    const res = await checklistPOST(req, { params: { id: "t1" } });
+    const res = await checklistPOST(req, { params: Promise.resolve({ id: "t1" }) });
     expect(res.status).toBe(400);
   });
 
@@ -68,7 +68,7 @@ describe("Checklists CRUD", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: "Check" }),
     });
-    const res = await checklistPOST(req, { params: { id: "t1" } });
+    const res = await checklistPOST(req, { params: Promise.resolve({ id: "t1" }) });
     expect(res.status).toBe(201);
   });
 
@@ -78,7 +78,7 @@ describe("Checklists CRUD", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sortKey: " " }),
     });
-    const res = await checklistPATCH(req, { params: { id: "c1" } });
+    const res = await checklistPATCH(req, { params: Promise.resolve({ id: "c1" }) });
     expect(res.status).toBe(400);
   });
 
@@ -88,12 +88,12 @@ describe("Checklists CRUD", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ completed: true }),
     });
-    const res = await checklistPATCH(req, { params: { id: "c1" } });
+    const res = await checklistPATCH(req, { params: Promise.resolve({ id: "c1" }) });
     expect(res.status).toBe(200);
   });
 
   it("DELETE /api/checklists/:id deletes item", async () => {
-    const res = await checklistDELETE(new Request("http://localhost"), { params: { id: "c1" } });
+    const res = await checklistDELETE(new Request("http://localhost"), { params: Promise.resolve({ id: "c1" }) });
     expect(res.status).toBe(200);
   });
 });
