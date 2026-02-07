@@ -66,13 +66,15 @@
 ## フロントエンドの実装仕様
 - ダッシュボードは Today/Inbox の件数と Area を表示。
 - 各ビューは `/api/{view}` を取得して表示。
+- `app/(views)/[view]/page.tsx` の各カテゴリ画面では、`PageMidHeader` 直下に「現在の view に対応する単一の `CategoryCard`」を表示する。
+- 上記 `CategoryCard` は `PageMidHeader` の直下でスクロール追従（sticky）し、Today/Inbox の場合はダッシュボード同様の detail（Overdue/Today, Overdue/Others）を表示する。
 - Access Token と TZ Offset は `localStorage` に保存する。
 - Access Token 入力欄には `Refresh` と `Clear` があり、`Clear` で入力中トークンを空にできる。
 - 画面横断で再利用する UI は `app/_components` に集約する（`CategoryCard`, `PageHero`, `PageMidHeader`, `AccessSettingsFooter`）。
 - `localStorage` 読み書きは `app/_hooks/useStoredState.ts`（`useStoredValue`, `useStoredJson`）を利用する。
 - 日付表示の共通計算は `app/_lib/date.ts`（`DEFAULT_TZ_OFFSET`, `getTodayString`, `getScheduleLabel`）を利用する。
 
-根拠: `app/page.tsx`, `app/(views)/[view]/page.tsx`, `app/areas/[areaId]/page.tsx`, `app/projects/[projectId]/page.tsx`, `app/_components/AccessSettingsFooter.tsx`, `app/_components/CategoryCard.tsx`, `app/_components/PageHero.tsx`, `app/_components/PageMidHeader.tsx`, `app/_hooks/useStoredState.ts`, `app/_lib/date.ts`
+根拠: `app/page.tsx`, `app/(views)/[view]/page.tsx`, `app/areas/[areaId]/page.tsx`, `app/projects/[projectId]/page.tsx`, `app/_components/AccessSettingsFooter.tsx`, `app/_components/CategoryCard.tsx`, `app/_components/PageHero.tsx`, `app/_components/PageMidHeader.tsx`, `app/_hooks/useStoredState.ts`, `app/_lib/date.ts`, `app/globals.css`
 
 ## Task 編集 UI のフォーカス挙動
 - タスク編集時は最後にタップした入力（Title / Note）を `lastFocusRef` で記録し、編集有効化時に該当の入力へフォーカスを移す。

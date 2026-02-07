@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { AccessSettingsFooter } from "../../_components/AccessSettingsFooter";
+import { CategoryCard } from "../../_components/CategoryCard";
 import { PageHero } from "../../_components/PageHero";
 import { PageMidHeader } from "../../_components/PageMidHeader";
 import { useStoredJson, useStoredValue } from "../../_hooks/useStoredState";
@@ -44,6 +45,12 @@ type ViewState =
   | { status: "error"; message: string }
   | { status: "ready"; items: Task[]; groups?: Array<{ date: string; items: Task[] }> };
 
+type CardState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "error"; message: string }
+  | { status: "ready"; items: Task[] };
+
 const ALLOWED_VIEWS = new Set(["today", "upcoming", "anytime", "someday", "logbook", "inbox"]);
 
 export default function ViewPage() {
@@ -56,6 +63,8 @@ export default function ViewPage() {
     {}
   );
   const [state, setState] = useState<ViewState>({ status: "idle" });
+  const [todayCard, setTodayCard] = useState<CardState>({ status: "idle" });
+  const [inboxCard, setInboxCard] = useState<CardState>({ status: "idle" });
   const [areas, setAreas] = useState<AreaRef[]>([]);
   const [projects, setProjects] = useState<ProjectRef[]>([]);
   const [isEditScheduleOpen, setIsEditScheduleOpen] = useState(false);
@@ -146,6 +155,29 @@ export default function ViewPage() {
     } catch {
       // ignore
     }
+  };
+
+  const fetchCard = async (path: string, setter: (state: CardState) => void) => {
+    setter({ status: "loading" });
+    try {
+      const res = await fetch(path, { headers });
+      const json = await res.json();
+      if (!res.ok) {
+        setter({ status: "error", message: json?.error?.message ?? "Request failed" });
+        return;
+      }
+      setter({ status: "ready", items: (json.items ?? []) as Task[] });
+    } catch (err) {
+      setter({ status: "error", message: err instanceof Error ? err.message : "Request failed" });
+    }
+  };
+
+  const fetchHeaderCards = async () => {
+    if (!canFetch) return;
+    await Promise.all([
+      fetchCard("/api/today", setTodayCard),
+      fetchCard("/api/inbox", setInboxCard),
+    ]);
   };
 
   const createTaskAndEdit = async () => {
@@ -462,6 +494,11 @@ const handleTaskClick = async (task: Task) => {
   }, [canFetch, view]);
 
   useEffect(() => {
+    if (canFetch) fetchHeaderCards();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canFetch, view]);
+
+  useEffect(() => {
     if (!editing) return;
     const handleClick = (event: MouseEvent) => {
       if (!editRowRef.current) return;
@@ -526,6 +563,56 @@ const handleTaskClick = async (task: Task) => {
     const offset = Number(tzOffset);
     return buildLogbookGroups(state.items, today, Number.isFinite(offset) ? offset : 0);
   }, [state, today, tzOffset]);
+  const todayCount =
+    todayCard.status === "ready" ? splitOverdue(todayCard.items, today) : { overdue: 0, rest: 0 };
+  const inboxCount =
+    inboxCard.status === "ready" ? splitOverdue(inboxCard.items, today) : { overdue: 0, rest: 0 };
+  const headerCard = useMemo(() => {
+    if (view === "today") {
+      return {
+        title: "Today",
+        status: todayCard.status,
+        detail: `Overdue ${todayCount.overdue} / Today ${todayCount.rest}`,
+        showDetail: todayCard.status === "ready",
+        icon: <i className="fa-solid fa-star icon-today" aria-hidden />,
+      };
+    }
+    if (view === "upcoming") {
+      return {
+        title: "Upcoming",
+        status: state.status,
+        icon: <i className="fa-solid fa-calendar icon-upcoming" aria-hidden />,
+      };
+    }
+    if (view === "anytime") {
+      return {
+        title: "Anytime",
+        status: state.status,
+        icon: <i className="fa-brands fa-stack-overflow icon-anytime" aria-hidden />,
+      };
+    }
+    if (view === "someday") {
+      return {
+        title: "Someday",
+        status: state.status,
+        icon: <i className="fa-solid fa-archive icon-someday" aria-hidden />,
+      };
+    }
+    if (view === "logbook") {
+      return {
+        title: "Logbook",
+        status: state.status,
+        icon: <i className="fa-solid fa-book icon-logbook" aria-hidden />,
+      };
+    }
+    return {
+      title: "Inbox",
+      status: inboxCard.status,
+      detail: `Overdue ${inboxCount.overdue} / Others ${inboxCount.rest}`,
+      showDetail: inboxCard.status === "ready",
+      icon: <i className="fa-solid fa-inbox icon-inbox" aria-hidden />,
+    };
+  }, [view, state.status, todayCard.status, todayCount.overdue, todayCount.rest, inboxCard.status, inboxCount.overdue, inboxCount.rest]);
   const pageTitle = view.toUpperCase();
 
   return (
@@ -537,6 +624,16 @@ const handleTaskClick = async (task: Task) => {
       />
 
       <PageMidHeader title={pageTitle} />
+
+      <section className="grid view-switcher-grid">
+        <CategoryCard
+          title={headerCard.title}
+          status={headerCard.status}
+          detail={headerCard.detail}
+          showDetail={headerCard.showDetail}
+          icon={headerCard.icon}
+        />
+      </section>
 
       <section className="grid">
         {!isLogbook && completedCount > 0 && (
@@ -776,11 +873,29 @@ const handleTaskClick = async (task: Task) => {
         setToken={setToken}
         tzOffset={tzOffset}
         setTzOffset={setTzOffset}
-        onRefresh={fetchView}
+        onRefresh={() => {
+          fetchView();
+          fetchMeta();
+          fetchHeaderCards();
+        }}
         canFetch={canFetch}
       />
     </main>
   );
+}
+
+function splitOverdue(items: Task[], today: string) {
+  let overdue = 0;
+  let rest = 0;
+  for (const item of items) {
+    if (item.completedAt) continue;
+    if (item.date && item.date < today) {
+      overdue += 1;
+    } else {
+      rest += 1;
+    }
+  }
+  return { overdue, rest };
 }
 
 type TaskListProps = {

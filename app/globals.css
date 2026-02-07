@@ -277,6 +277,13 @@ button:not(:disabled):hover {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
 
+.view-switcher-grid {
+  margin: 0;
+  position: sticky;
+  top: 40px;
+  z-index: 5;
+}
+
 .page-mid-header {
   background: #7f6d57;
   color: #f3e8d8;
@@ -286,6 +293,9 @@ button:not(:disabled):hover {
   position: sticky;
   top: 0;
   z-index: 6;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
 }
 
 .page-mid-header h1 {
