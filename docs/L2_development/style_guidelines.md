@@ -35,7 +35,7 @@
   - 明日: `Tomorrow`
   - 今日から2〜5日後: 曜日（例: `Mon`）
   - 6日後以降: `m/d(曜日)`（ゼロ埋めなし）
-  - 過去日付: `m/d(曜日)` + `fa-flag`、文字色は紫（`.date-overdue`）
+  - 過去日付: `Nd ago` + `fa-flag`、文字色は紫（`.date-overdue`）
 
 根拠: `app/page.tsx`, `app/(views)/[view]/page.tsx`, `app/areas/[areaId]/page.tsx`, `app/projects/[projectId]/page.tsx`, `app/globals.css`
 
