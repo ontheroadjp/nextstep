@@ -532,6 +532,7 @@ const handleTaskClick = async (task: Task) => {
             <button onClick={fetchArea} disabled={!canFetch}>
               Refresh
             </button>
+            <button onClick={() => setToken("")}>Clear</button>
             {!canFetch && <span className="hint">token を入れると取得できます</span>}
           </div>
         </div>
