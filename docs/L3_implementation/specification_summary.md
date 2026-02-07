@@ -43,8 +43,9 @@
 - Logbook: 完了日（`archived_at`）降順（変更なし）
 - Today: Project/Area/No Group の順で表示し、その後に This Evening を表示
 - Inbox/Anytime/Someday/Area/Project: 日付なし → 日付ありの順で並べ、日付なしは `created_at` 降順、日付ありは `date` 昇順 + `created_at` 降順
+- Today/Area/Project の一覧行では、`date < today` のタスクを右端メタ領域に `fa-flag` + `Nd ago`（紫）で表示する
 
-根拠: `app/(views)/[view]/page.tsx`, `app/areas/[areaId]/page.tsx`, `app/projects/[projectId]/page.tsx`
+根拠: `app/(views)/[view]/page.tsx`, `app/areas/[areaId]/page.tsx`, `app/projects/[projectId]/page.tsx`, `app/_lib/overdue.ts`
 
 ## Project / Area / Checklist
 - Project: `name` / `note` 必須。
