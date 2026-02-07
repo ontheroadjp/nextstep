@@ -67,6 +67,7 @@
 - ダッシュボードは Today/Inbox の件数と Area を表示。
 - 各ビューは `/api/{view}` を取得して表示。
 - Access Token と TZ Offset は `localStorage` に保存する。
+- Access Token 入力欄には `Refresh` と `Clear` があり、`Clear` で入力中トークンを空にできる。
 
 根拠: `app/page.tsx`, `app/(views)/[view]/page.tsx`
 
