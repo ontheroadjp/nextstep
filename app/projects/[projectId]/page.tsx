@@ -2,6 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import { AccessSettingsFooter } from "../../_components/AccessSettingsFooter";
+import { PageHero } from "../../_components/PageHero";
+import { PageMidHeader } from "../../_components/PageMidHeader";
+import { useStoredJson, useStoredValue } from "../../_hooks/useStoredState";
+import { DEFAULT_TZ_OFFSET, getScheduleLabel, getTodayString } from "../../_lib/date";
 import { formatOverdueDaysAgo } from "../../_lib/overdue";
 import { sortMixedByDateAndCreated } from "../../_lib/task_sort";
 
@@ -38,65 +43,11 @@ type ProjectState =
       tasks: Task[];
     };
 
-const DEFAULT_TZ = "540";
-
-function useStoredValue(key: string, fallback: string) {
-  const [value, setValue] = useState(fallback);
-  useEffect(() => {
-    const stored = window.localStorage.getItem(key);
-    if (stored !== null) setValue(stored);
-  }, [key]);
-  useEffect(() => {
-    window.localStorage.setItem(key, value);
-  }, [key, value]);
-  return [value, setValue] as const;
-}
-
-function useStoredJson<T>(key: string, fallback: T) {
-  const [value, setValue] = useState(fallback);
-  useEffect(() => {
-    const stored = window.localStorage.getItem(key);
-    if (!stored) return;
-    try {
-      setValue(JSON.parse(stored) as T);
-    } catch {
-      // ignore
-    }
-  }, [key]);
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(key, JSON.stringify(value));
-    } catch {
-      // ignore
-    }
-  }, [key, value]);
-  return [value, setValue] as const;
-}
-
-function getTodayString(offsetMinutes: number) {
-  const offsetMs = offsetMinutes * 60 * 1000;
-  const now = new Date(Date.now() + offsetMs);
-  const yyyy = now.getUTCFullYear();
-  const mm = String(now.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(now.getUTCDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}
-
-function getScheduleLabel(
-  fields: Pick<EditFields, "someday" | "date" | "evening">,
-  today: string
-) {
-  if (fields.someday) return "Someday";
-  if (!fields.date) return "";
-  if (fields.date === today) return fields.evening ? "This Evening" : "Today";
-  return fields.date;
-}
-
 export default function ProjectPage() {
   const params = useParams();
   const projectId = String(params.projectId ?? "");
   const [token, setToken] = useStoredValue("ns-access-token", "");
-  const [tzOffset, setTzOffset] = useStoredValue("ns-tz-offset", DEFAULT_TZ);
+  const [tzOffset, setTzOffset] = useStoredValue("ns-tz-offset", DEFAULT_TZ_OFFSET);
   const [eveningMap, setEveningMap] = useStoredJson<Record<string, boolean>>(
     "ns-evening-map",
     {}
@@ -465,17 +416,13 @@ const handleTaskClick = async (task: Task) => {
 
   return (
     <main>
-      <div className="hero page">
-        <div>
-          <p className="eyebrow">Project</p>
-          <h1>{pageTitle}</h1>
-          <p className="lead">詳細UIは後で調整します。今は一覧だけ確認できます。</p>
-        </div>
-      </div>
+      <PageHero
+        eyebrow="Project"
+        title={pageTitle}
+        lead="詳細UIは後で調整します。今は一覧だけ確認できます。"
+      />
 
-      <section className="page-mid-header">
-        <h1><a className="page-mid-header-link" href="/"><i className="fa-solid fa-arrow-circle-left" aria-hidden="true" /> {pageTitle}</a></h1>
-      </section>
+      <PageMidHeader title={pageTitle} />
 
       <section className="grid">
         {completedCount > 0 && (
@@ -521,34 +468,14 @@ const handleTaskClick = async (task: Task) => {
           +
         </button>
       </section>
-      <footer className="footer-panel">
-        <div className="panel">
-          <label>
-            Access Token
-            <textarea
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              placeholder="x-access-token を貼り付け"
-              rows={3}
-            />
-          </label>
-          <label>
-            TZ Offset (minutes)
-            <input
-              value={tzOffset}
-              onChange={(e) => setTzOffset(e.target.value)}
-              placeholder="540"
-            />
-          </label>
-          <div className="actions">
-            <button onClick={fetchProject} disabled={!canFetch}>
-              Refresh
-            </button>
-            <button onClick={() => setToken("")}>Clear</button>
-            {!canFetch && <span className="hint">token を入れると取得できます</span>}
-          </div>
-        </div>
-      </footer>
+      <AccessSettingsFooter
+        token={token}
+        setToken={setToken}
+        tzOffset={tzOffset}
+        setTzOffset={setTzOffset}
+        onRefresh={fetchProject}
+        canFetch={canFetch}
+      />
     </main>
   );
 }

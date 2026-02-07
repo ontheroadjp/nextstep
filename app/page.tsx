@@ -1,6 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { AccessSettingsFooter } from "./_components/AccessSettingsFooter";
+import { CategoryCard } from "./_components/CategoryCard";
+import { PageHero } from "./_components/PageHero";
+import { useStoredValue } from "./_hooks/useStoredState";
+import { DEFAULT_TZ_OFFSET, getTodayString } from "./_lib/date";
 
 type Task = {
   id: string;
@@ -27,29 +32,6 @@ type Area = {
   sort_key?: string | null;
 };
 
-const DEFAULT_TZ = "540";
-
-function useStoredValue(key: string, fallback: string) {
-  const [value, setValue] = useState(fallback);
-  useEffect(() => {
-    const stored = window.localStorage.getItem(key);
-    if (stored !== null) setValue(stored);
-  }, [key]);
-  useEffect(() => {
-    window.localStorage.setItem(key, value);
-  }, [key, value]);
-  return [value, setValue] as const;
-}
-
-function getTodayString(offsetMinutes: number) {
-  const offsetMs = offsetMinutes * 60 * 1000;
-  const now = new Date(Date.now() + offsetMs);
-  const yyyy = now.getUTCFullYear();
-  const mm = String(now.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(now.getUTCDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}
-
 function splitOverdue(items: Task[], today: string) {
   let overdue = 0;
   let rest = 0;
@@ -66,7 +48,7 @@ function splitOverdue(items: Task[], today: string) {
 
 export default function HomePage() {
   const [token, setToken] = useStoredValue("ns-access-token", "");
-  const [tzOffset, setTzOffset] = useStoredValue("ns-tz-offset", DEFAULT_TZ);
+  const [tzOffset, setTzOffset] = useStoredValue("ns-tz-offset", DEFAULT_TZ_OFFSET);
   const [today, setToday] = useState<ViewState>({ status: "idle" });
   const [inbox, setInbox] = useState<ViewState>({ status: "idle" });
   const [areas, setAreas] = useState<ViewState>({ status: "idle" });
@@ -119,15 +101,11 @@ export default function HomePage() {
 
   return (
     <main>
-      <div className="hero page">
-        <div>
-          <p className="eyebrow">Nextstep</p>
-          <h1>Daily dashboard</h1>
-          <p className="lead">
-            Today と Inbox の件数だけを表示。エリアは同列に並べて確認できます。
-          </p>
-        </div>
-      </div>
+      <PageHero
+        eyebrow="Nextstep"
+        title="Daily dashboard"
+        lead="Today と Inbox の件数だけを表示。エリアは同列に並べて確認できます。"
+      />
 
       <section className="grid">
         <CategoryCard
@@ -182,73 +160,14 @@ export default function HomePage() {
             <CategoryCard key={area.id} title={area.name} href={`/areas/${area.id}`} />
           ))}
       </section>
-      <footer className="footer-panel">
-        <div className="panel">
-          <label>
-            Access Token
-            <textarea
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              placeholder="x-access-token を貼り付け"
-              rows={3}
-            />
-          </label>
-          <label>
-            TZ Offset (minutes)
-            <input
-              value={tzOffset}
-              onChange={(e) => setTzOffset(e.target.value)}
-              placeholder="540"
-            />
-          </label>
-          <div className="actions">
-            <button onClick={refreshAll} disabled={!canFetch}>
-              Refresh
-            </button>
-            <button onClick={() => setToken("")}>Clear</button>
-            {!canFetch && <span className="hint">token を入れると取得できます</span>}
-          </div>
-        </div>
-      </footer>
+      <AccessSettingsFooter
+        token={token}
+        setToken={setToken}
+        tzOffset={tzOffset}
+        setTzOffset={setTzOffset}
+        onRefresh={refreshAll}
+        canFetch={canFetch}
+      />
     </main>
-  );
-}
-
-function CategoryCard({
-  title,
-  href,
-  status = "ready",
-  detail,
-  showDetail = false,
-  icon,
-}: {
-  title: string;
-  href?: string;
-  status?: ViewState["status"];
-  detail?: string;
-  showDetail?: boolean;
-  icon?: React.ReactNode;
-}) {
-  const body = (
-    <div className="view-card">
-      <div className="view-header">
-        <h2 className="with-icon">
-          {icon && <span className="title-icon">{icon}</span>}
-          {title}
-        </h2>
-        <span className="badge">{status === "loading" ? "…" : "-"}</span>
-      </div>
-      {status === "error" && <p className="error">{detail ?? "Failed to load"}</p>}
-      {status === "loading" && <p className="muted">Loading...</p>}
-      {status === "idle" && <p className="muted">No data yet.</p>}
-      {showDetail && status === "ready" && <p className="detail">{detail}</p>}
-    </div>
-  );
-  return href ? (
-    <a className="card-link" href={href}>
-      {body}
-    </a>
-  ) : (
-    body
   );
 }
