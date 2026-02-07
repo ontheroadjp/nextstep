@@ -12,7 +12,7 @@ type ProjectUpdateInput = {
 
 export async function GET(
   request: Request,
-  context: { params: Promise<{ projectId: string }> | { projectId: string } }
+  context: { params: Promise<{ projectId: string }> }
 ): Promise<Response> {
   const admin = createServerClient();
   const auth = await requireUserContext(admin, request);
@@ -48,7 +48,7 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  context: { params: Promise<{ projectId: string }> | { projectId: string } }
+  context: { params: Promise<{ projectId: string }> }
 ): Promise<Response> {
   const admin = createServerClient();
   const auth = await requireUserContext(admin, request);
@@ -109,7 +109,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: Request,
-  context: { params: Promise<{ projectId: string }> | { projectId: string } }
+  context: { params: Promise<{ projectId: string }> }
 ): Promise<Response> {
   const admin = createServerClient();
   const auth = await requireUserContext(admin, request);

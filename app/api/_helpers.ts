@@ -23,32 +23,38 @@ export type Task = {
   checklists: Checklist[];
 };
 
-export function mapChecklist(row: Record<string, unknown>): Checklist {
+function toRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+}
+
+export function mapChecklist(row: unknown): Checklist {
+  const item = toRecord(row);
   return {
-    id: String(row.id),
-    title: String(row.title ?? ""),
-    completed: Boolean(row.completed),
-    sortKey: (row.sort_key as string | null) ?? null,
+    id: String(item.id),
+    title: String(item.title ?? ""),
+    completed: Boolean(item.completed),
+    sortKey: (item.sort_key as string | null) ?? null,
   };
 }
 
-export function mapTask(row: Record<string, unknown>): Task {
-  const checklists = Array.isArray(row.checklists)
-    ? row.checklists.map((c) => mapChecklist(c as Record<string, unknown>))
+export function mapTask(row: unknown): Task {
+  const item = toRecord(row);
+  const checklists = Array.isArray(item.checklists)
+    ? item.checklists.map((c) => mapChecklist(c))
     : [];
 
   return {
-    id: String(row.id),
-    title: String(row.title ?? ""),
-    note: String(row.note ?? ""),
-    date: (row.date as string | null) ?? null,
-    someday: Boolean(row.someday),
-    completedAt: (row.completed_at as string | null) ?? null,
-    archivedAt: (row.archived_at as string | null) ?? null,
-    createdAt: (row.created_at as string | null) ?? null,
-    areaId: (row.area_id as string | null) ?? null,
-    projectId: (row.project_id as string | null) ?? null,
-    sortKey: (row.sort_key as string | null) ?? null,
+    id: String(item.id),
+    title: String(item.title ?? ""),
+    note: String(item.note ?? ""),
+    date: (item.date as string | null) ?? null,
+    someday: Boolean(item.someday),
+    completedAt: (item.completed_at as string | null) ?? null,
+    archivedAt: (item.archived_at as string | null) ?? null,
+    createdAt: (item.created_at as string | null) ?? null,
+    areaId: (item.area_id as string | null) ?? null,
+    projectId: (item.project_id as string | null) ?? null,
+    sortKey: (item.sort_key as string | null) ?? null,
     checklists,
   };
 }

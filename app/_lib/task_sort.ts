@@ -4,9 +4,9 @@ export type TaskSortInput = {
   createdAt: string | null;
 };
 
-type GroupedTasks = {
-  dated: TaskSortInput[];
-  undated: TaskSortInput[];
+type GroupedTasks<T extends TaskSortInput> = {
+  dated: T[];
+  undated: T[];
 };
 
 function safeTime(value: string | null): number {
@@ -19,9 +19,9 @@ function safeDateKey(value: string | null): string {
   return typeof value === "string" && value ? value : "";
 }
 
-export function splitByDate(items: TaskSortInput[]): GroupedTasks {
-  const dated: TaskSortInput[] = [];
-  const undated: TaskSortInput[] = [];
+export function splitByDate<T extends TaskSortInput>(items: T[]): GroupedTasks<T> {
+  const dated: T[] = [];
+  const undated: T[] = [];
   for (const item of items) {
     if (item.date) {
       dated.push(item);

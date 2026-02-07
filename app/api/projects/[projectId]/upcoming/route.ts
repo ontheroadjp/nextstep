@@ -3,7 +3,7 @@ import { error, json } from "../../../_utils";
 import { mapTask, requireUserContext, todayFromRequest } from "../../../_helpers";
 import { fetchUpcoming } from "../../../_queries";
 
-export async function GET(request: Request, context: { params: Promise<{ projectId: string }> | { projectId: string } }): Promise<Response> {
+export async function GET(request: Request, context: { params: Promise<{ projectId: string }> }): Promise<Response> {
   const admin = createServerClient();
   const auth = await requireUserContext(admin, request);
   if (auth instanceof Response) return auth;
