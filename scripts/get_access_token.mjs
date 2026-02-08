@@ -58,4 +58,29 @@ if (!data.session?.access_token) {
   process.exit(1);
 }
 
-process.stdout.write(data.session.access_token);
+const accessToken = data.session.access_token;
+const refreshToken = data.session.refresh_token ?? "";
+const expiresAt = data.session.expires_at ?? null;
+
+const arg = process.argv[2] ?? "";
+if (arg === "--json") {
+  process.stdout.write(
+    JSON.stringify({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      expires_at: expiresAt,
+    })
+  );
+  process.exit(0);
+}
+
+if (arg === "--refresh-token") {
+  if (!refreshToken) {
+    console.error("No refresh token returned");
+    process.exit(1);
+  }
+  process.stdout.write(refreshToken);
+  process.exit(0);
+}
+
+process.stdout.write(accessToken);

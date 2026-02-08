@@ -54,7 +54,7 @@ describe("app/api/_helpers boundary errors", () => {
       },
     };
     const req = new Request("http://localhost", {
-      headers: { "x-access-token": "invalid-token" },
+      headers: { Authorization: "Bearer invalid-token" },
     });
 
     const result = await requireUserContext(supabase as never, req);

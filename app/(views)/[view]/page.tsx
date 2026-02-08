@@ -8,6 +8,7 @@ import { CategoryCard } from "../../_components/CategoryCard";
 import { PageHero } from "../../_components/PageHero";
 import { PageMidHeader } from "../../_components/PageMidHeader";
 import { useStoredJson, useStoredValue } from "../../_hooks/useStoredState";
+import { fetchWithAutoRefresh } from "../../_lib/auth_fetch";
 import { DEFAULT_TZ_OFFSET, getScheduleLabel, getTodayString } from "../../_lib/date";
 import { formatOverdueDaysAgo } from "../../_lib/overdue";
 import { sortDatedByDateAscThenCreatedDesc, sortMixedByDateAndCreated } from "../../_lib/task_sort";
@@ -51,7 +52,8 @@ const ALLOWED_VIEWS = new Set(["today", "upcoming", "anytime", "someday", "logbo
 export default function ViewPage() {
   const params = useParams();
   const view = String(params.view ?? "");
-  const [token, setToken] = useStoredValue("ns-access-token", "");
+  const [accessToken, setAccessToken] = useStoredValue("ns-access-token", "");
+  const [refreshToken, setRefreshToken] = useStoredValue("ns-refresh-token", "");
   const [tzOffset, setTzOffset] = useStoredValue("ns-tz-offset", DEFAULT_TZ_OFFSET);
   const [eveningMap, setEveningMap] = useStoredJson<Record<string, boolean>>(
     "ns-evening-map",
@@ -77,7 +79,7 @@ export default function ViewPage() {
   const editTouchedRef = useRef(false);
   const suppressClickRef = useRef(false);
 
-  const canFetch = token.trim().length > 0 && ALLOWED_VIEWS.has(view);
+  const canFetch = accessToken.trim().length > 0 && ALLOWED_VIEWS.has(view);
   const isLogbook = view === "logbook";
   const needsGrouping = view === "today" || view === "anytime" || view === "someday";
   const showThisEvening = view === "today";
@@ -85,10 +87,9 @@ export default function ViewPage() {
 
   const headers = useMemo(() => {
     const h = new Headers();
-    if (token.trim()) h.set("x-access-token", token.trim());
     if (tzOffset.trim()) h.set("x-tz-offset-minutes", tzOffset.trim());
     return h;
-  }, [token, tzOffset]);
+  }, [tzOffset]);
 
   const today = useMemo(() => {
     const offset = Number(tzOffset);
@@ -101,7 +102,11 @@ export default function ViewPage() {
       setState({ status: "loading" });
     }
     try {
-      const res = await fetch(`/api/${view}`, { headers });
+      const res = await fetchWithAutoRefresh(
+        `/api/${view}`,
+        { headers },
+        { accessToken, refreshToken, setAccessToken, setRefreshToken }
+      );
       const json = await res.json();
       if (!res.ok) {
         setState({ status: "error", message: json?.error?.message ?? "Request failed" });
@@ -121,7 +126,7 @@ export default function ViewPage() {
 
   const fetchMeta = async (opts?: { force?: boolean }) => {
     if (!canFetch || !needsGrouping) return;
-    const currentToken = token.trim();
+    const currentToken = accessToken.trim();
     if (
       !opts?.force &&
       metaCacheRef.current.loaded &&
@@ -131,8 +136,16 @@ export default function ViewPage() {
     }
     try {
       const [areasRes, projectsRes] = await Promise.all([
-        fetch("/api/areas", { headers }),
-        fetch("/api/projects", { headers }),
+        fetchWithAutoRefresh(
+          "/api/areas",
+          { headers },
+          { accessToken, refreshToken, setAccessToken, setRefreshToken }
+        ),
+        fetchWithAutoRefresh(
+          "/api/projects",
+          { headers },
+          { accessToken, refreshToken, setAccessToken, setRefreshToken }
+        ),
       ]);
       const areasJson = await areasRes.json();
       const projectsJson = await projectsRes.json();
@@ -163,7 +176,7 @@ export default function ViewPage() {
   };
 
   const createTaskAndEdit = async () => {
-    if (!token.trim() || createSavingRef.current || isLocked) return;
+    if (!accessToken.trim() || createSavingRef.current || isLocked) return;
     createSavingRef.current = true;
     setCreateMessage(null);
     let initialDate = "";
@@ -183,11 +196,15 @@ export default function ViewPage() {
       someday: initialSomeday,
     };
     try {
-      const res = await fetch("/api/tasks", {
-        method: "POST",
-        headers,
-        body: JSON.stringify(payload),
-      });
+      const res = await fetchWithAutoRefresh(
+        "/api/tasks",
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify(payload),
+        },
+        { accessToken, refreshToken, setAccessToken, setRefreshToken }
+      );
       const json = await res.json();
       if (!res.ok) {
         setCreateMessage(json?.error?.message ?? "Failed to create");
@@ -244,7 +261,7 @@ export default function ViewPage() {
   };
 
   const saveEdit = async (): Promise<boolean> => {
-    if (!editing || savingEditRef.current || !token.trim()) return false;
+    if (!editing || savingEditRef.current || !accessToken.trim()) return false;
     if (!editTouchedRef.current) return false;
     if (!editing.title.trim()) {
       setEditMessage("タイトルを入力してください");
@@ -259,11 +276,15 @@ export default function ViewPage() {
       someday: editing.someday,
     };
     try {
-      const res = await fetch(`/api/tasks/${editing.id}`, {
-        method: "PATCH",
-        headers,
-        body: JSON.stringify(payload),
-      });
+      const res = await fetchWithAutoRefresh(
+        `/api/tasks/${editing.id}`,
+        {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify(payload),
+        },
+        { accessToken, refreshToken, setAccessToken, setRefreshToken }
+      );
       const json = await res.json();
       if (!res.ok) {
         setEditMessage(json?.error?.message ?? "Failed to update");
@@ -417,7 +438,7 @@ const handleTaskClick = async (task: Task) => {
   };
 
   const toggleComplete = async (task: Task) => {
-    if (!token.trim() || isLogbook) return;
+    if (!accessToken.trim() || isLogbook) return;
     const nextCompletedAt = task.completedAt ? null : new Date().toISOString();
     setState((prev) => {
       if (prev.status !== "ready") return prev;
@@ -429,11 +450,15 @@ const handleTaskClick = async (task: Task) => {
       };
     });
     try {
-      await fetch(`/api/tasks/${task.id}`, {
-        method: "PATCH",
-        headers,
-        body: JSON.stringify({ completedAt: nextCompletedAt }),
-      });
+      await fetchWithAutoRefresh(
+        `/api/tasks/${task.id}`,
+        {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ completedAt: nextCompletedAt }),
+        },
+        { accessToken, refreshToken, setAccessToken, setRefreshToken }
+      );
       fetchView({ silent: true });
     } catch {
       fetchView({ silent: true });
@@ -441,23 +466,31 @@ const handleTaskClick = async (task: Task) => {
   };
 
   const archiveCompleted = async () => {
-    if (!token.trim() || state.status !== "ready") return;
+    if (!accessToken.trim() || state.status !== "ready") return;
     const targets = state.items.filter((t) => t.completedAt && !t.archivedAt);
     if (targets.length === 0) return;
     for (const task of targets) {
-      await fetch(`/api/tasks/${task.id}`, {
-        method: "PATCH",
-        headers,
-        body: JSON.stringify({ archivedAt: new Date().toISOString() }),
-      });
+      await fetchWithAutoRefresh(
+        `/api/tasks/${task.id}`,
+        {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ archivedAt: new Date().toISOString() }),
+        },
+        { accessToken, refreshToken, setAccessToken, setRefreshToken }
+      );
     }
     fetchView({ silent: true });
   };
 
   const handleDelete = async (task: Task) => {
-    if (!token.trim()) return;
+    if (!accessToken.trim()) return;
     try {
-      await fetch(`/api/tasks/${task.id}`, { method: "DELETE", headers });
+      await fetchWithAutoRefresh(
+        `/api/tasks/${task.id}`,
+        { method: "DELETE", headers },
+        { accessToken, refreshToken, setAccessToken, setRefreshToken }
+      );
       fetchView({ silent: true });
     } catch {
       // ignore
@@ -475,10 +508,10 @@ const handleTaskClick = async (task: Task) => {
   }, [canFetch, view]);
 
   useEffect(() => {
-    metaCacheRef.current = { token: token.trim(), loaded: false };
+    metaCacheRef.current = { token: accessToken.trim(), loaded: false };
     setAreas([]);
     setProjects([]);
-  }, [token]);
+  }, [accessToken]);
 
   useEffect(() => {
     if (!editing) return;
@@ -871,8 +904,10 @@ const handleTaskClick = async (task: Task) => {
         )}
       </section>
       <AccessSettingsFooter
-        token={token}
-        setToken={setToken}
+        accessToken={accessToken}
+        setAccessToken={setAccessToken}
+        refreshToken={refreshToken}
+        setRefreshToken={setRefreshToken}
         tzOffset={tzOffset}
         setTzOffset={setTzOffset}
         onRefresh={() => {

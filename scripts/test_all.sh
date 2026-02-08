@@ -15,7 +15,7 @@ if [[ -z "${TOKEN}" ]]; then
   exit 1
 fi
 
-header_auth=("-H" "x-access-token: $TOKEN")
+header_auth=("-H" "Authorization: Bearer $TOKEN")
 
 test_prefix=${TEST_PREFIX:-[TEST] }
 
