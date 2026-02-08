@@ -26,6 +26,16 @@
 
 根拠: `docs/L1/05_testing.md`, `.github/workflows/integration.yml`
 
+## Seed データ（表示検証）
+- 実行コマンド: `npm run seed:test-data`
+- 挙動:
+  - `append` は既存データを維持して追加投入
+  - `reset` は `areas/projects/tasks/checklists` を全削除してから投入
+- `reset` で必要:
+  - `SUPABASE_SERVICE_ROLE_KEY`
+
+根拠: `scripts/seed_test_data.mjs`, `package.json`
+
 ## テスト対象
 - API ルート（Tasks/Areas/Projects/Checklists/Views）
 - RLS を含むアクセス制御

@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:integration": "INTEGRATION_TEST=1 vitest run tests/integration"
+    "test:integration": "INTEGRATION_TEST=1 vitest run tests/integration",
+    "seed:test-data": "node scripts/seed_test_data.mjs"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^6.7.2",
