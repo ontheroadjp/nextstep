@@ -32,11 +32,12 @@
 ## バックエンド（API）
 - 認証: `Authorization: Bearer <token>` または `x-access-token` を受け取り、Supabase Auth で検証。
 - ビュー取得: Today/Upcoming/Anytime/Someday/Logbook/Inbox。
+- ヘルスチェック: `live`（生存確認）と `ready`（必須環境変数確認）。
 - CRUD: Tasks/Areas/Projects/Checklists。
 - 日付境界: `x-tz-offset-minutes` で補正し、API 側で today を算出。
 - 監視: `withApiMonitoring` を全 API route に適用し、`401` / `5xx` / レイテンシ閾値超過を監視イベントとして送出する。
 
-根拠: `app/api/_helpers.ts`, `app/api/_queries.ts`, `app/api/*/route.ts`, `app/api/_utils.ts`, `app/_lib/monitoring.ts`
+根拠: `app/api/_helpers.ts`, `app/api/_queries.ts`, `app/api/*/route.ts`, `app/api/health/live/route.ts`, `app/api/health/ready/route.ts`, `app/api/_utils.ts`, `app/_lib/monitoring.ts`
 
 ## データ層
 - テーブル: `areas`, `projects`, `tasks`, `checklists`
