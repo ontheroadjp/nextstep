@@ -10,7 +10,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:integration": "INTEGRATION_TEST=1 vitest run tests/integration",
-    "seed:test-data": "node scripts/seed_test_data.mjs"
+    "seed:test-data": "node scripts/seed_test_data.mjs",
+    "db:migrate": "bash scripts/db_migrate.sh",
+    "db:migrate:dry": "bash scripts/db_migrate.sh --dry-run",
+    "db:backup": "bash scripts/db_backup.sh",
+    "db:rollback": "bash scripts/db_rollback.sh"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^6.7.2",
