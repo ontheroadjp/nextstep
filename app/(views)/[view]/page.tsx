@@ -329,7 +329,6 @@ export default function ViewPage() {
       lastFocusRef.current === "note" ? editNoteRef.current : editTitleRef.current;
     if (!target) return;
     target.focus();
-    if ("select" in target) target.select();
   }, [isEditReady, editing?.id]);
 
   const getScrollContainer = (node: HTMLElement | null): HTMLElement | Window => {
