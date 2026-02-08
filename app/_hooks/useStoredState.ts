@@ -4,15 +4,22 @@ import { useEffect, useState } from "react";
 
 export function useStoredValue(key: string, fallback: string) {
   const [value, setValue] = useState(fallback);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(key);
-    if (stored !== null) setValue(stored);
-  }, [key]);
+    if (stored !== null) {
+      setValue(stored);
+    } else {
+      setValue(fallback);
+    }
+    setIsHydrated(true);
+  }, [key, fallback]);
 
   useEffect(() => {
+    if (!isHydrated) return;
     window.localStorage.setItem(key, value);
-  }, [key, value]);
+  }, [key, value, isHydrated]);
 
   return [value, setValue] as const;
 }
