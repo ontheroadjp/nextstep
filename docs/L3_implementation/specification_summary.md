@@ -2,9 +2,10 @@
 
 ## 認証・認可
 - API は `Authorization: Bearer <token>` または `x-access-token` を受け取り、Supabase Auth でユーザーを検証する。
+- `POST /api/auth/refresh` は `refreshToken` を受け取り、新しい `accessToken` / `refreshToken` を返す。
 - ユーザー ID は `requireUserContext` で取得し、以降の DB 操作に利用する。
 
-根拠: `app/api/_helpers.ts`, `app/api/_supabase.ts`
+根拠: `app/api/_helpers.ts`, `app/api/_supabase.ts`, `app/api/auth/refresh/route.ts`
 
 ## 日付境界と today
 - `x-tz-offset-minutes` を受け取り、UTC 日付を補正して `today` を算出する。
@@ -69,13 +70,14 @@
 - `app/(views)/[view]/page.tsx` の各カテゴリ画面では、`PageMidHeader` 直下に「現在の view に対応する単一の `CategoryCard`」を表示する。
 - 上記 `CategoryCard` は `PageMidHeader` の直下でスクロール追従（sticky）し、Today/Inbox の場合はダッシュボード同様の detail（Overdue/Today, Overdue/Others）を表示する。
 - `app/(views)/[view]/page.tsx` の No Group セクション（area/project 未所属タスク）は、専用クラスでタスク行左余白を調整し、Project/Area 見出しアイコンの左端と揃える。
-- Access Token と TZ Offset は `localStorage` に保存する。
-- Access Token 入力欄には `Refresh` と `Clear` があり、`Clear` で入力中トークンを空にできる。
+- Access Token / Refresh Token / TZ Offset は `localStorage` に保存する。
+- フッターは `Access Token` / `Refresh Token` / `TZ Offset` と `Refresh` / `Clear` を表示し、`Clear` で認証トークンを同時に空にできる。
 - 画面横断で再利用する UI は `app/_components` に集約する（`CategoryCard`, `PageHero`, `PageMidHeader`, `AccessSettingsFooter`）。
 - `localStorage` 読み書きは `app/_hooks/useStoredState.ts`（`useStoredValue`, `useStoredJson`）を利用する。
 - `useStoredValue` は初回 hydration 完了前に `localStorage` へ書き戻さない（初期空文字で既存 token を上書きしない）。
 - 日付表示の共通計算は `app/_lib/date.ts`（`DEFAULT_TZ_OFFSET`, `getTodayString`, `getScheduleLabel`）を利用する。
 - `app/(views)/[view]/page.tsx` は `today/anytime/someday` のメタ情報（`areas/projects`）を token 単位でキャッシュし、View 間遷移時の重複取得を抑制する（`Refresh` は強制再取得）。
+- クライアントの API 呼び出しは `fetchWithAutoRefresh` を通し、`401` 受信時は `refreshToken` で 1 回だけ再発行後に再試行する。
 
 根拠: `app/page.tsx`, `app/(views)/[view]/page.tsx`, `app/areas/[areaId]/page.tsx`, `app/projects/[projectId]/page.tsx`, `app/_components/AccessSettingsFooter.tsx`, `app/_components/CategoryCard.tsx`, `app/_components/PageHero.tsx`, `app/_components/PageMidHeader.tsx`, `app/_hooks/useStoredState.ts`, `app/_lib/date.ts`, `app/globals.css`
 

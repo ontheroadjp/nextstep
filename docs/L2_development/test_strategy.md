@@ -38,12 +38,13 @@
 
 ## テスト対象
 - API ルート（Tasks/Areas/Projects/Checklists/Views）
+- 認証更新 API（`POST /api/auth/refresh`）
 - RLS を含むアクセス制御
 - View 編集フォーカスの挙動（入力開始時に全選択しない）
 - View Someday グルーピングの並び順ルール（Today と同一）
 - View Upcoming の期間区切りルール（明日〜7日 / 月内レンジ / 3ヶ月月単位 / 4ヶ月目以降年単位）
 
-根拠: `tests/api/*.test.ts`, `tests/integration/*.test.ts`, `tests/task_edit_focus_behavior.test.ts`, `tests/someday_grouping_sort_rule.test.ts`, `tests/upcoming_sectioning.test.ts`, `docs/L1/05_testing.md`
+根拠: `tests/api/*.test.ts`, `tests/integration/*.test.ts`, `tests/task_edit_focus_behavior.test.ts`, `tests/someday_grouping_sort_rule.test.ts`, `tests/upcoming_sectioning.test.ts`, `tests/api/auth_refresh_route.test.ts`, `docs/L1/05_testing.md`
 
 ## 未確認事項
 - E2E テスト（Playwright/Cypress 等）の導入有無
