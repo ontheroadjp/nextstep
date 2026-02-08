@@ -4,8 +4,10 @@
 - JSON API
 - 認証: `Authorization: Bearer <token>` または `x-access-token`
 - 日付境界: `x-tz-offset-minutes`
+- API保護: 認証系 (`/api/auth/*`) と更新系（`POST/PATCH/DELETE/PUT`）に rate limit を適用し、超過時は `429 too_many_requests` を返す。
+- `429` 応答ヘッダ: `retry-after`, `x-rate-limit-limit`, `x-rate-limit-remaining`, `x-rate-limit-reset`
 
-根拠: `app/api/_helpers.ts`, `docs/L1/04_api_contract.md`
+根拠: `app/api/_helpers.ts`, `app/api/_utils.ts`, `app/_lib/api_protection.ts`, `docs/L1/04_api_contract.md`
 
 ## 認証 API
 - `POST /api/auth/login`（`provider` と認証情報を受け取り、`accessToken` / `refreshToken` を発行）

@@ -4,10 +4,16 @@ const { emitMonitoringEventMock, getLatencyThresholdMsMock } = vi.hoisted(() => 
   emitMonitoringEventMock: vi.fn(async () => {}),
   getLatencyThresholdMsMock: vi.fn(() => 10),
 }));
+const { checkApiProtectionRateLimitMock } = vi.hoisted(() => ({
+  checkApiProtectionRateLimitMock: vi.fn<(...args: unknown[]) => unknown>(() => null),
+}));
 
 vi.mock("../../app/_lib/monitoring", () => ({
   emitMonitoringEvent: emitMonitoringEventMock,
   getLatencyThresholdMs: getLatencyThresholdMsMock,
+}));
+vi.mock("../../app/_lib/api_protection", () => ({
+  checkApiProtectionRateLimit: checkApiProtectionRateLimitMock,
 }));
 
 import { error, json, withApiMonitoring } from "../../app/api/_utils";
@@ -17,6 +23,32 @@ describe("withApiMonitoring", () => {
     emitMonitoringEventMock.mockClear();
     getLatencyThresholdMsMock.mockReset();
     getLatencyThresholdMsMock.mockReturnValue(10);
+    checkApiProtectionRateLimitMock.mockReset();
+    checkApiProtectionRateLimitMock.mockReturnValue(null);
+  });
+
+  it("returns 429 when api protection blocks request", async () => {
+    checkApiProtectionRateLimitMock.mockReturnValue({
+      allowed: false,
+      limit: 2,
+      remaining: 0,
+      resetAt: Date.now() + 60_000,
+      retryAfterSec: 60,
+      kind: "auth",
+    });
+
+    const wrapped = withApiMonitoring(async () => json({ ok: true }));
+    const response = await wrapped(new Request("http://localhost/api/auth/login", { method: "POST" }));
+    const body = (await response.json()) as { error: { code: string } };
+
+    expect(response.status).toBe(429);
+    expect(body.error.code).toBe("too_many_requests");
+    expect(emitMonitoringEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "api_rate_limited",
+        status: 429,
+      })
+    );
   });
 
   it("reports 401 responses", async () => {
