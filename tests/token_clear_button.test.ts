@@ -17,7 +17,8 @@ describe("access token clear button", () => {
     const source = read("../app/_components/AccessSettingsFooter.tsx");
     expect(source).toContain("Refresh");
     expect(source).toContain("Clear");
-    expect(source).toContain('onClick={() => setToken("")}');
+    expect(source).toContain('setAccessToken("")');
+    expect(source).toContain('setRefreshToken("")');
   });
 
   it.each(targets)("uses shared footer component in %s", (path) => {
