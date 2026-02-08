@@ -18,3 +18,13 @@
 
 未確認理由: デプロイ用の設定/IaC がリポジトリ内に見当たらない
 追加確認候補: README, `.github/workflows` の追加ファイル, Infra フォルダ
+
+## 運用監視（アプリ内）
+- API 監視イベントはアプリ内で構造化ログとして出力される。
+- Slack 通知は Incoming Webhook を利用する（任意設定）。
+- 監視関連環境変数:
+  - `MONITORING_SLACK_WEBHOOK_URL`（未設定時は Slack 通知を行わない）
+  - `MONITORING_SLACK_COOLDOWN_MS`（同一キー通知の抑制間隔、既定 60000ms）
+  - `MONITORING_LATENCY_THRESHOLD_MS`（レイテンシ通知閾値、既定 1500ms）
+
+根拠: `app/_lib/monitoring.ts`, `app/api/_utils.ts`
