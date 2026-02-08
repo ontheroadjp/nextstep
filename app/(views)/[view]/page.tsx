@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { AccessSettingsFooter, type AuthState } from "../../_components/AccessSettingsFooter";
+import { AccessSettingsFooter } from "../../_components/AccessSettingsFooter";
 import { CategoryCard } from "../../_components/CategoryCard";
 import { PageHero } from "../../_components/PageHero";
 import { PageMidHeader } from "../../_components/PageMidHeader";
@@ -54,9 +54,13 @@ export default function ViewPage() {
   const view = String(params.view ?? "");
   const {
     accessToken,
-    setAccessToken,
-    refreshToken,
-    setRefreshToken,
+    authProvider,
+    setAuthProvider,
+    isAuthenticated,
+    isAuthLoading,
+    authError,
+    login,
+    logout,
     tzOffset,
     setTzOffset,
     headers,
@@ -76,6 +80,8 @@ export default function ViewPage() {
   const [createMessage, setCreateMessage] = useState<string | null>(null);
   const [editing, setEditing] = useState<Editing | null>(null);
   const [editMessage, setEditMessage] = useState<string | null>(null);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
   const editRowRef = useRef<HTMLDivElement | null>(null);
   const editTitleRef = useRef<HTMLInputElement | null>(null);
   const editNoteRef = useRef<HTMLTextAreaElement | null>(null);
@@ -87,9 +93,7 @@ export default function ViewPage() {
   const suppressClickRef = useRef(false);
 
   const accessReady = accessToken.trim().length > 0;
-  const refreshReady = refreshToken.trim().length > 0;
   const canFetch = accessReady && ALLOWED_VIEWS.has(view);
-  const authState: AuthState = accessReady ? (refreshReady ? "ready" : "refresh_missing") : "access_missing";
   const isLogbook = view === "logbook";
   const needsGrouping = view === "today" || view === "anytime" || view === "someday";
   const showThisEvening = view === "today";
@@ -613,6 +617,15 @@ const handleTaskClick = async (task: Task) => {
   }, [view, state.status, headerCounts.overdue, headerCounts.rest]);
   const pageTitle = view.toUpperCase();
 
+  const handleLogin = async () => {
+    const ok = await login(loginEmail, loginPassword);
+    if (ok) {
+      setLoginPassword("");
+      fetchView();
+      fetchMeta({ force: true });
+    }
+  };
+
   return (
     <main>
       <PageHero
@@ -891,10 +904,17 @@ const handleTaskClick = async (task: Task) => {
         )}
       </section>
       <AccessSettingsFooter
-        accessToken={accessToken}
-        setAccessToken={setAccessToken}
-        refreshToken={refreshToken}
-        setRefreshToken={setRefreshToken}
+        authProvider={authProvider}
+        setAuthProvider={setAuthProvider}
+        loginEmail={loginEmail}
+        setLoginEmail={setLoginEmail}
+        loginPassword={loginPassword}
+        setLoginPassword={setLoginPassword}
+        onLogin={handleLogin}
+        onLogout={logout}
+        isAuthenticated={isAuthenticated}
+        isAuthLoading={isAuthLoading}
+        authError={authError}
         tzOffset={tzOffset}
         setTzOffset={setTzOffset}
         onRefresh={() => {
@@ -902,7 +922,6 @@ const handleTaskClick = async (task: Task) => {
           fetchMeta({ force: true });
         }}
         canFetch={canFetch}
-        authState={authState}
       />
     </main>
   );

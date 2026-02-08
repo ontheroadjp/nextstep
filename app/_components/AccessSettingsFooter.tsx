@@ -1,56 +1,75 @@
 import type { Dispatch, SetStateAction } from "react";
 
-export type AuthState = "ready" | "refresh_missing" | "access_missing";
+import type { AuthProvider } from "../_hooks/useClientAuth";
 
 type AccessSettingsFooterProps = {
-  accessToken: string;
-  setAccessToken: Dispatch<SetStateAction<string>>;
-  refreshToken: string;
-  setRefreshToken: Dispatch<SetStateAction<string>>;
+  authProvider: AuthProvider;
+  setAuthProvider: Dispatch<SetStateAction<AuthProvider>>;
+  loginEmail: string;
+  setLoginEmail: Dispatch<SetStateAction<string>>;
+  loginPassword: string;
+  setLoginPassword: Dispatch<SetStateAction<string>>;
+  onLogin: () => void;
+  onLogout: () => void;
+  isAuthenticated: boolean;
+  isAuthLoading: boolean;
+  authError: string | null;
   tzOffset: string;
   setTzOffset: Dispatch<SetStateAction<string>>;
   onRefresh: () => void;
   canFetch: boolean;
-  authState: AuthState;
 };
 
 export function AccessSettingsFooter({
-  accessToken,
-  setAccessToken,
-  refreshToken,
-  setRefreshToken,
+  authProvider,
+  setAuthProvider,
+  loginEmail,
+  setLoginEmail,
+  loginPassword,
+  setLoginPassword,
+  onLogin,
+  onLogout,
+  isAuthenticated,
+  isAuthLoading,
+  authError,
   tzOffset,
   setTzOffset,
   onRefresh,
   canFetch,
-  authState,
 }: AccessSettingsFooterProps) {
-  const hintByState: Record<Exclude<AuthState, "ready">, string> = {
-    access_missing: "access token を入れると取得できます",
-    refresh_missing: "refresh token を入れると自動更新できます",
-  };
-
   return (
     <footer className="footer-panel">
       <div className="panel">
-        <label>
-          Access Token
-          <textarea
-            value={accessToken}
-            onChange={(e) => setAccessToken(e.target.value)}
-            placeholder="Bearer access token を貼り付け"
-            rows={3}
-          />
-        </label>
-        <label>
-          Refresh Token
-          <textarea
-            value={refreshToken}
-            onChange={(e) => setRefreshToken(e.target.value)}
-            placeholder="refresh token を貼り付け"
-            rows={3}
-          />
-        </label>
+        {!isAuthenticated && (
+          <>
+            <label>
+              Login Method
+              <select value={authProvider} onChange={(e) => setAuthProvider(e.target.value as AuthProvider)}>
+                <option value="password">Email / Password</option>
+              </select>
+            </label>
+            <label>
+              Email
+              <input
+                type="email"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                placeholder="email@example.com"
+                autoComplete="username"
+              />
+            </label>
+            <label>
+              Password
+              <input
+                type="password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                placeholder="password"
+                autoComplete="current-password"
+              />
+            </label>
+          </>
+        )}
         <label>
           TZ Offset (minutes)
           <input value={tzOffset} onChange={(e) => setTzOffset(e.target.value)} placeholder="540" />
@@ -59,15 +78,13 @@ export function AccessSettingsFooter({
           <button onClick={onRefresh} disabled={!canFetch}>
             Refresh
           </button>
-          <button
-            onClick={() => {
-              setAccessToken("");
-              setRefreshToken("");
-            }}
-          >
-            Clear
-          </button>
-          {authState !== "ready" && <span className="hint">{hintByState[authState]}</span>}
+          {!isAuthenticated && (
+            <button onClick={onLogin} disabled={isAuthLoading || !loginEmail.trim() || !loginPassword}>
+              {isAuthLoading ? "Logging in..." : "Login"}
+            </button>
+          )}
+          {isAuthenticated && <button onClick={onLogout}>Logout</button>}
+          {authError && <span className="error">{authError}</span>}
         </div>
       </div>
     </footer>

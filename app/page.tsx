@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AccessSettingsFooter, type AuthState } from "./_components/AccessSettingsFooter";
+import { AccessSettingsFooter } from "./_components/AccessSettingsFooter";
 import { CategoryCard } from "./_components/CategoryCard";
 import { PageHero } from "./_components/PageHero";
 import { useClientAuth } from "./_hooks/useClientAuth";
@@ -49,9 +49,13 @@ function splitOverdue(items: Task[], today: string) {
 export default function HomePage() {
   const {
     accessToken,
-    setAccessToken,
-    refreshToken,
-    setRefreshToken,
+    authProvider,
+    setAuthProvider,
+    isAuthenticated,
+    isAuthLoading,
+    authError,
+    login,
+    logout,
     tzOffset,
     setTzOffset,
     headers,
@@ -60,11 +64,11 @@ export default function HomePage() {
   const [today, setToday] = useState<DataState<Task>>({ status: "idle" });
   const [inbox, setInbox] = useState<DataState<Task>>({ status: "idle" });
   const [areas, setAreas] = useState<DataState<Area>>({ status: "idle" });
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
 
   const accessReady = accessToken.trim().length > 0;
-  const refreshReady = refreshToken.trim().length > 0;
   const canFetch = accessReady;
-  const authState: AuthState = accessReady ? (refreshReady ? "ready" : "refresh_missing") : "access_missing";
 
   const fetchView = async <T,>(path: string, setter: (state: DataState<T>) => void) => {
     setter({ status: "loading" });
@@ -102,6 +106,14 @@ export default function HomePage() {
     today.status === "ready" ? splitOverdue(today.items, todayDate) : { overdue: 0, rest: 0 };
   const inboxCount =
     inbox.status === "ready" ? splitOverdue(inbox.items, todayDate) : { overdue: 0, rest: 0 };
+
+  const handleLogin = async () => {
+    const ok = await login(loginEmail, loginPassword);
+    if (ok) {
+      setLoginPassword("");
+      refreshAll();
+    }
+  };
 
   return (
     <main>
@@ -165,15 +177,21 @@ export default function HomePage() {
           ))}
       </section>
       <AccessSettingsFooter
-        accessToken={accessToken}
-        setAccessToken={setAccessToken}
-        refreshToken={refreshToken}
-        setRefreshToken={setRefreshToken}
+        authProvider={authProvider}
+        setAuthProvider={setAuthProvider}
+        loginEmail={loginEmail}
+        setLoginEmail={setLoginEmail}
+        loginPassword={loginPassword}
+        setLoginPassword={setLoginPassword}
+        onLogin={handleLogin}
+        onLogout={logout}
+        isAuthenticated={isAuthenticated}
+        isAuthLoading={isAuthLoading}
+        authError={authError}
         tzOffset={tzOffset}
         setTzOffset={setTzOffset}
         onRefresh={refreshAll}
         canFetch={canFetch}
-        authState={authState}
       />
     </main>
   );

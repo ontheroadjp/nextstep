@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import { AccessSettingsFooter, type AuthState } from "../../_components/AccessSettingsFooter";
+import { AccessSettingsFooter } from "../../_components/AccessSettingsFooter";
 import { PageHero } from "../../_components/PageHero";
 import { PageMidHeader } from "../../_components/PageMidHeader";
 import { useClientAuth } from "../../_hooks/useClientAuth";
@@ -49,9 +49,13 @@ export default function ProjectPage() {
   const projectId = String(params.projectId ?? "");
   const {
     accessToken,
-    setAccessToken,
-    refreshToken,
-    setRefreshToken,
+    authProvider,
+    setAuthProvider,
+    isAuthenticated,
+    isAuthLoading,
+    authError,
+    login,
+    logout,
     tzOffset,
     setTzOffset,
     headers,
@@ -69,6 +73,8 @@ export default function ProjectPage() {
   const [isClosing, setIsClosing] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
   const [isEditReady, setIsEditReady] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
   const editRowRef = useRef<HTMLDivElement | null>(null);
   const createSavingRef = useRef(false);
   const savingEditRef = useRef(false);
@@ -76,9 +82,7 @@ export default function ProjectPage() {
   const suppressClickRef = useRef(false);
 
   const accessReady = accessToken.trim().length > 0;
-  const refreshReady = refreshToken.trim().length > 0;
   const canFetch = accessReady && projectId.length > 0;
-  const authState: AuthState = accessReady ? (refreshReady ? "ready" : "refresh_missing") : "access_missing";
   const isLocked = Boolean(editing);
 
   const today = useMemo(() => {
@@ -434,6 +438,14 @@ const handleTaskClick = async (task: Task) => {
       : 0;
   const pageTitle = state.status === "ready" ? state.item.name : "Project";
 
+  const handleLogin = async () => {
+    const ok = await login(loginEmail, loginPassword);
+    if (ok) {
+      setLoginPassword("");
+      fetchProject();
+    }
+  };
+
   return (
     <main>
       <PageHero
@@ -489,15 +501,21 @@ const handleTaskClick = async (task: Task) => {
         </button>
       </section>
       <AccessSettingsFooter
-        accessToken={accessToken}
-        setAccessToken={setAccessToken}
-        refreshToken={refreshToken}
-        setRefreshToken={setRefreshToken}
+        authProvider={authProvider}
+        setAuthProvider={setAuthProvider}
+        loginEmail={loginEmail}
+        setLoginEmail={setLoginEmail}
+        loginPassword={loginPassword}
+        setLoginPassword={setLoginPassword}
+        onLogin={handleLogin}
+        onLogout={logout}
+        isAuthenticated={isAuthenticated}
+        isAuthLoading={isAuthLoading}
+        authError={authError}
         tzOffset={tzOffset}
         setTzOffset={setTzOffset}
         onRefresh={fetchProject}
         canFetch={canFetch}
-        authState={authState}
       />
     </main>
   );
