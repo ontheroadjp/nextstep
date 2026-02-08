@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildUpcomingSections } from "../app/(views)/[view]/page";
+import { buildUpcomingSections } from "../app/_lib/upcoming_sections";
 
 type Task = {
   id: string;
@@ -48,23 +48,39 @@ describe("upcoming sectioning", () => {
 
     expect(sections).toHaveLength(14);
     expect(sections.slice(0, 7).every((s) => s.kind === "day")).toBe(true);
-    expect(sections[0].kind).toBe("day");
-    expect(sections[0].label).toBe("Tomorrow");
-    expect(sections[0].dayNumber).toBe(9);
+    expect(sections[0]?.kind).toBe("day");
+    const first = sections[0];
+    if (!first || first.kind !== "day") throw new Error("first section must be day");
+    expect(first.label).toBe("Tomorrow");
+    expect(first.dayNumber).toBe(9);
 
-    expect(sections[7].kind).toBe("range");
-    expect(sections[7].title).toBe("February 16–28");
-    expect(sections[7].items.map((t) => t.id)).toEqual(["r1", "r2"]);
+    expect(sections[7]?.kind).toBe("range");
+    const range = sections[7];
+    if (!range || range.kind !== "range") throw new Error("8th section must be range");
+    expect(range.title).toBe("February 16–28");
+    expect(range.items.map((t) => t.id)).toEqual(["r1", "r2"]);
 
-    expect(sections[8].kind).toBe("month");
-    expect(sections[8].title).toBe("March");
-    expect(sections[9].title).toBe("April");
-    expect(sections[10].title).toBe("May");
+    expect(sections[8]?.kind).toBe("month");
+    const month1 = sections[8];
+    const month2 = sections[9];
+    const month3 = sections[10];
+    if (!month1 || month1.kind !== "month") throw new Error("9th section must be month");
+    if (!month2 || month2.kind !== "month") throw new Error("10th section must be month");
+    if (!month3 || month3.kind !== "month") throw new Error("11th section must be month");
+    expect(month1.title).toBe("March");
+    expect(month2.title).toBe("April");
+    expect(month3.title).toBe("May");
 
-    expect(sections[11].kind).toBe("year");
-    expect(sections[11].title).toBe("2026");
-    expect(sections[11].items.map((t) => t.id)).toEqual(["y0"]);
-    expect(sections[12].title).toBe("2027");
-    expect(sections[13].title).toBe("2028");
+    expect(sections[11]?.kind).toBe("year");
+    const year1 = sections[11];
+    const year2 = sections[12];
+    const year3 = sections[13];
+    if (!year1 || year1.kind !== "year") throw new Error("12th section must be year");
+    if (!year2 || year2.kind !== "year") throw new Error("13th section must be year");
+    if (!year3 || year3.kind !== "year") throw new Error("14th section must be year");
+    expect(year1.title).toBe("2026");
+    expect(year1.items.map((t) => t.id)).toEqual(["y0"]);
+    expect(year2.title).toBe("2027");
+    expect(year3.title).toBe("2028");
   });
 });

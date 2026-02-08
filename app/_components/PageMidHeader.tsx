@@ -1,10 +1,12 @@
+import Link from "next/link";
+
 export function PageMidHeader({ title, href = "/" }: { title: string; href?: string }) {
   return (
     <section className="page-mid-header">
       <h1>
-        <a className="page-mid-header-link" href={href}>
+        <Link className="page-mid-header-link" href={href}>
           <i className="fa-solid fa-arrow-circle-left" aria-hidden="true" /> {title}
-        </a>
+        </Link>
       </h1>
     </section>
   );
