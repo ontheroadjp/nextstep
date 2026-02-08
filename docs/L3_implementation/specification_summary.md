@@ -62,8 +62,9 @@
 - `tasks.archived_at is not null` の場合 `completed_at is not null`
 - `projects.note` は必須
 - 主要テーブルは `user_id` と RLS による制御
+- DB 運用は `db_migrate.sh`（固定順適用）、`db_backup.sh`（SQLバックアップ）、`db_rollback.sh`（SQLリストア）を利用する
 
-根拠: `db/migrations/0001_init.sql`, `db/maintenance/0003_archive_flow.sql`
+根拠: `db/migrations/0001_init.sql`, `db/maintenance/0003_archive_flow.sql`, `scripts/db_migrate.sh`, `scripts/db_backup.sh`, `scripts/db_rollback.sh`
 
 ## フロントエンドの実装仕様
 - ダッシュボードは Today/Inbox の件数と Area を表示。

@@ -39,6 +39,17 @@
 
 根拠: `db/migrations/0001_init.sql`, `db/maintenance/0002_apply_sort_key_constraints.sql`, `db/maintenance/0003_archive_flow.sql`
 
-## 未確認事項
-- 実運用のマイグレーション適用手順
-  - 追加確認候補: README, 運用手順書
+## マイグレーション運用手順
+- 適用順序は固定:
+  1. `db/migrations/0001_init.sql`
+  2. `db/maintenance/0002_apply_sort_key_constraints.sql`
+  3. `db/maintenance/0003_archive_flow.sql`
+- 実行コマンド:
+  - Dry-run: `npm run db:migrate:dry`
+  - Apply: `npm run db:migrate`
+- バックアップ/ロールバック:
+  - Backup: `npm run db:backup -- --output <path/to/backup.sql>`
+  - Rollback (SQL restore): `npm run db:rollback -- --input <path/to/backup.sql>`
+- 実行時は `DATABASE_URL` が必須。
+
+根拠: `scripts/db_migrate.sh`, `scripts/db_backup.sh`, `scripts/db_rollback.sh`, `package.json`

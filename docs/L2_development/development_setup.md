@@ -40,6 +40,15 @@
 
 根拠: `package.json`, `.github/workflows/tests.yml`, `.github/workflows/integration.yml`
 
+## DB 運用コマンド
+- Migration dry-run: `npm run db:migrate:dry`
+- Migration apply: `npm run db:migrate`
+- Backup: `npm run db:backup -- --output <path/to/backup.sql>`
+- Rollback (backup restore): `npm run db:rollback -- --input <path/to/backup.sql>`
+- 必須環境変数: `DATABASE_URL`
+
+根拠: `package.json`, `scripts/db_migrate.sh`, `scripts/db_backup.sh`, `scripts/db_rollback.sh`
+
 ## Seed データ投入（表示テスト用）
 - スクリプト: `scripts/seed_test_data.mjs`
 - 投入モード:
