@@ -66,3 +66,6 @@
 ## 未確認事項
 - ローカル `.env` の配布/管理方法
   - 追加確認候補: README, 社内運用ドキュメント
+
+## 運用手順書
+- β運用の全体手順は `docs/L2_development/beta_operations_runbook.md` を参照。

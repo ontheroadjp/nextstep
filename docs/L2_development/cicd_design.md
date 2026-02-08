@@ -36,3 +36,6 @@
   - `API_RATE_LIMIT_MAX_WRITE`（更新系上限、既定 300）
 
 根拠: `app/_lib/api_protection.ts`, `app/api/_utils.ts`
+
+## β運用導線
+- 公開前チェック、障害時対応、ロールバックを含む運用手順は `docs/L2_development/beta_operations_runbook.md` を参照。
