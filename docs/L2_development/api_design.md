@@ -8,9 +8,10 @@
 根拠: `app/api/_helpers.ts`, `docs/L1/04_api_contract.md`
 
 ## 認証 API
+- `POST /api/auth/login`（`provider` と認証情報を受け取り、`accessToken` / `refreshToken` を発行）
 - `POST /api/auth/refresh`（`refreshToken` を受け取り、`accessToken` / `refreshToken` を再発行）
 
-根拠: `app/api/auth/refresh/route.ts`
+根拠: `app/api/auth/login/route.ts`, `app/api/auth/refresh/route.ts`
 
 ## ビュー API
 - `GET /api/today`
