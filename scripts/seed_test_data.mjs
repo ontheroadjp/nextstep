@@ -6,17 +6,17 @@ import { pathToFileURL } from "node:url";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 
-const TOTAL_TASKS = 500;
+const TOTAL_TASKS = 80;
 
 const BUCKET_COUNTS = {
-  anytimeInbox: 60,
-  anytimeArea: 50,
-  anytimeProject: 50,
-  todayMixed: 90,
-  pastMixed: 80,
-  futureMixed: 80,
-  somedayMixed: 60,
-  logbookArchived: 30,
+  anytimeInbox: 2,
+  anytimeArea: 16,
+  anytimeProject: 16,
+  todayMixed: 12,
+  pastMixed: 14,
+  futureMixed: 14,
+  somedayMixed: 2,
+  logbookArchived: 4,
 };
 
 export { TOTAL_TASKS, BUCKET_COUNTS };
@@ -25,40 +25,11 @@ const AREA_NAMES = [
   "家庭",
   "仕事",
   "健康",
-  "学習",
-  "買い物",
-  "事務",
-  "趣味",
-  "メンテナンス",
-  "家計",
-  "地域",
 ];
 
 const PROJECT_DEFINITIONS = [
   ["朝の家事ルーチン", "家庭"],
-  ["平日夕食準備", "家庭"],
   ["デスク周り改善", "仕事"],
-  ["週次ふりかえり", "仕事"],
-  ["通院と服薬管理", "健康"],
-  ["ランニング継続", "健康"],
-  ["英語学習", "学習"],
-  ["資格試験準備", "学習"],
-  ["日用品補充", "買い物"],
-  ["食材買い出し", "買い物"],
-  ["契約書・請求書管理", "事務"],
-  ["銀行・税金手続き", "事務"],
-  ["写真整理", "趣味"],
-  ["読書メモ", "趣味"],
-  ["自転車整備", "メンテナンス"],
-  ["PCメンテナンス", "メンテナンス"],
-  ["固定費見直し", "家計"],
-  ["予算計画", "家計"],
-  ["町内行事対応", "地域"],
-  ["防災備蓄", "地域"],
-  ["個人メモ", null],
-  ["短期メモ", null],
-  ["長期検討", null],
-  ["未分類", null],
 ];
 
 const TITLE_BASES = [
@@ -168,6 +139,30 @@ function requireEnv(name) {
   return value;
 }
 
+function base64UrlDecode(inputStr) {
+  const normalized = inputStr.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized + "===".slice((normalized.length + 3) % 4);
+  return Buffer.from(padded, "base64").toString("utf8");
+}
+
+function assertServiceRoleKey(key) {
+  const parts = key.split(".");
+  if (parts.length !== 3) {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY is not a valid JWT format.");
+  }
+  let payload;
+  try {
+    payload = JSON.parse(base64UrlDecode(parts[1]));
+  } catch {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY payload cannot be decoded.");
+  }
+  if (payload.role !== "service_role") {
+    throw new Error(
+      `SUPABASE_SERVICE_ROLE_KEY role is '${String(payload.role)}'. A 'service_role' key is required.`
+    );
+  }
+}
+
 function pad2(n) {
   return String(n).padStart(2, "0");
 }
@@ -185,6 +180,18 @@ function addMonths(baseDate, months, day = 15) {
   return new Date(baseDate.getFullYear(), baseDate.getMonth() + months, Math.min(day, 28), 12, 0, 0, 0);
 }
 
+function addDays(baseDate, days) {
+  return new Date(
+    baseDate.getFullYear(),
+    baseDate.getMonth(),
+    baseDate.getDate() + days,
+    12,
+    0,
+    0,
+    0
+  );
+}
+
 function toIsoFromDate(dateStr, hour = 12) {
   const dt = parseDateLocal(dateStr);
   dt.setHours(hour, 0, 0, 0);
@@ -192,7 +199,7 @@ function toIsoFromDate(dateStr, hour = 12) {
 }
 
 function parseArgs(argv) {
-  const parsed = { mode: null, forceReset: false };
+  const parsed = { mode: null, forceReset: false, resetOnly: false };
   for (const arg of argv) {
     if (arg.startsWith("--mode=")) {
       const mode = arg.slice("--mode=".length);
@@ -200,6 +207,9 @@ function parseArgs(argv) {
     }
     if (arg === "--force-reset") {
       parsed.forceReset = true;
+    }
+    if (arg === "--reset-only") {
+      parsed.resetOnly = true;
     }
   }
   return parsed;
@@ -263,6 +273,22 @@ function makeNote(index) {
   return NOTE_BASES[index % NOTE_BASES.length];
 }
 
+function makeScenarioNote(index, bucket, date, today) {
+  const base = makeNote(index);
+  if (!date) {
+    if (bucket === "somedayMixed") return `${base} 余裕があるときに着手する。`;
+    return `${base} 日程未確定の通常タスク。`;
+  }
+  const deltaDays = Math.round((parseDateLocal(date).getTime() - parseDateLocal(today).getTime()) / 86400000);
+  if (deltaDays === 0) return `${base} 今日中に完了したい。`;
+  if (deltaDays > 0 && deltaDays <= 7) return `${base} 今週中の予定。`;
+  if (deltaDays > 7 && deltaDays <= 31) return `${base} 今月中に対応予定。`;
+  if (deltaDays > 31) return `${base} 中長期で計画的に進める。`;
+  if (deltaDays >= -7) return `${base} 直近で期限を過ぎているため優先対応。`;
+  if (deltaDays >= -31) return `${base} 今月中に取り戻す。`;
+  return `${base} 長期未完了のため段取りを見直す。`;
+}
+
 function buildAreaRows(userId, prefix) {
   return AREA_NAMES.map((name, idx) => ({
     user_id: userId,
@@ -292,14 +318,12 @@ function pickProject(projects, idx) {
 function buildTaskSpecs(params) {
   const { today, areas, projects, prefix } = params;
   const specs = [];
-  const monthOffsetsPast = Array.from({ length: 18 }, (_, i) => -18 + i);
-  const monthOffsetsFuture = Array.from({ length: 18 }, (_, i) => i + 1);
 
   let serial = 1;
   const pushSpec = (bucket, assignmentMode, overrides = {}) => {
     const idx = serial - 1;
     const title = `${prefix}${makeTitle(idx, bucket)} #${pad2(serial)}`;
-    const note = `${prefix}${makeNote(idx)}`;
+    const note = `${prefix}${makeScenarioNote(idx, bucket, overrides.date ?? null, today)}`;
     const sortKey = `t-${String(serial).padStart(4, "0")}`;
 
     let areaId = null;
@@ -343,7 +367,7 @@ function buildTaskSpecs(params) {
     pushSpec("anytimeProject", "project", { date: null, someday: false });
   }
 
-  const todayModes = ["inbox", "area", "project"];
+  const todayModes = ["area", "project"];
   for (let i = 0; i < BUCKET_COUNTS.todayMixed; i += 1) {
     const completed = i % 10 === 0 ? toIsoFromDate(today, 20) : null;
     pushSpec("todayMixed", todayModes[i % todayModes.length], {
@@ -353,9 +377,25 @@ function buildTaskSpecs(params) {
     });
   }
 
-  const pastModes = ["inbox", "area", "project"];
+  const pastModes = ["area", "project"];
   for (let i = 0; i < BUCKET_COUNTS.pastMixed; i += 1) {
-    const date = formatDateLocal(addMonths(parseDateLocal(today), monthOffsetsPast[i % 18], (i % 27) + 1));
+    const pastDatePlan = [
+      addDays(parseDateLocal(today), -1),
+      addDays(parseDateLocal(today), -2),
+      addDays(parseDateLocal(today), -3),
+      addDays(parseDateLocal(today), -4),
+      addDays(parseDateLocal(today), -5),
+      addDays(parseDateLocal(today), -7),
+      addDays(parseDateLocal(today), -10),
+      addDays(parseDateLocal(today), -14),
+      addDays(parseDateLocal(today), -21),
+      addDays(parseDateLocal(today), -30),
+      addDays(parseDateLocal(today), -45),
+      addDays(parseDateLocal(today), -75),
+      addMonths(parseDateLocal(today), -6, 12),
+      addMonths(parseDateLocal(today), -18, 1),
+    ];
+    const date = formatDateLocal(pastDatePlan[i % pastDatePlan.length]);
     const completed = i % 8 === 0 ? toIsoFromDate(date, 19) : null;
     pushSpec("pastMixed", pastModes[i % pastModes.length], {
       date,
@@ -364,16 +404,32 @@ function buildTaskSpecs(params) {
     });
   }
 
-  const futureModes = ["inbox", "area", "project"];
+  const futureModes = ["area", "project"];
   for (let i = 0; i < BUCKET_COUNTS.futureMixed; i += 1) {
-    const date = formatDateLocal(addMonths(parseDateLocal(today), monthOffsetsFuture[i % 18], (i % 27) + 1));
+    const futureDatePlan = [
+      addDays(parseDateLocal(today), 1),
+      addDays(parseDateLocal(today), 2),
+      addDays(parseDateLocal(today), 3),
+      addDays(parseDateLocal(today), 4),
+      addDays(parseDateLocal(today), 5),
+      addDays(parseDateLocal(today), 7),
+      addDays(parseDateLocal(today), 10),
+      addDays(parseDateLocal(today), 14),
+      addDays(parseDateLocal(today), 21),
+      addDays(parseDateLocal(today), 30),
+      addDays(parseDateLocal(today), 45),
+      addDays(parseDateLocal(today), 75),
+      addMonths(parseDateLocal(today), 6, 12),
+      addMonths(parseDateLocal(today), 18, 1),
+    ];
+    const date = formatDateLocal(futureDatePlan[i % futureDatePlan.length]);
     pushSpec("futureMixed", futureModes[i % futureModes.length], {
       date,
       someday: false,
     });
   }
 
-  const somedayModes = ["inbox", "area", "project"];
+  const somedayModes = ["area", "project"];
   for (let i = 0; i < BUCKET_COUNTS.somedayMixed; i += 1) {
     pushSpec("somedayMixed", somedayModes[i % somedayModes.length], {
       date: null,
@@ -381,9 +437,15 @@ function buildTaskSpecs(params) {
     });
   }
 
-  const logbookModes = ["inbox", "area", "project"];
+  const logbookModes = ["area", "project"];
   for (let i = 0; i < BUCKET_COUNTS.logbookArchived; i += 1) {
-    const date = formatDateLocal(addMonths(parseDateLocal(today), monthOffsetsPast[(i * 2) % 18], (i % 27) + 1));
+    const logbookDatePlan = [
+      addDays(parseDateLocal(today), -3),
+      addDays(parseDateLocal(today), -10),
+      addDays(parseDateLocal(today), -30),
+      addMonths(parseDateLocal(today), -6, 8),
+    ];
+    const date = formatDateLocal(logbookDatePlan[i % logbookDatePlan.length]);
     const completedAt = toIsoFromDate(date, 18);
     const archivedAt = toIsoFromDate(date, 21);
     pushSpec("logbookArchived", logbookModes[i % logbookModes.length], {
@@ -469,12 +531,48 @@ export function buildSeedPlan({ today, userId, prefix, areaRows, projectRows }) 
   return { taskSpecs, checklistSpecs, summary };
 }
 
+async function deleteTableByIdBatches(admin, table, batchSize = 500) {
+  let deleted = 0;
+  while (true) {
+    const { data, error: fetchError } = await admin
+      .from(table)
+      .select("id")
+      .not("id", "is", null)
+      .limit(batchSize);
+    if (fetchError) {
+      throw new Error(`Failed to list ${table}: ${fetchError.message}`);
+    }
+    if (!data || data.length === 0) break;
+
+    const ids = data.map((row) => row.id);
+    const { error: deleteError } = await admin.from(table).delete().in("id", ids);
+    if (deleteError) {
+      throw new Error(`Failed to delete ${table}: ${deleteError.message}`);
+    }
+    deleted += ids.length;
+  }
+  return deleted;
+}
+
 async function deleteAllData(admin) {
   const tables = ["checklists", "tasks", "projects", "areas"];
+  const deletedCounts = {};
   for (const table of tables) {
-    const { error } = await admin.from(table).delete().not("id", "is", null);
-    if (error) throw new Error(`Failed to delete ${table}: ${error.message}`);
+    deletedCounts[table] = await deleteTableByIdBatches(admin, table);
   }
+  return deletedCounts;
+}
+
+async function getTableCounts(admin, tables) {
+  const counts = {};
+  for (const table of tables) {
+    const { count, error } = await admin.from(table).select("id", { head: true, count: "exact" });
+    if (error) {
+      throw new Error(`Failed to count ${table}: ${error.message}`);
+    }
+    counts[table] = count ?? 0;
+  }
+  return counts;
 }
 
 async function insertInBatches(client, table, rows, batchSize = 100, selectColumns = "id") {
@@ -504,7 +602,8 @@ async function main() {
 
   if (mode === "reset") {
     await confirmReset(args.forceReset);
-    requireEnv("SUPABASE_SERVICE_ROLE_KEY");
+    const serviceRoleKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
+    assertServiceRoleKey(serviceRoleKey);
   }
 
   const authClient = createClient(supabaseUrl, anonKey, {
@@ -533,13 +632,28 @@ async function main() {
 
   if (mode === "reset") {
     const serviceRoleKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
+    assertServiceRoleKey(serviceRoleKey);
     const adminClient = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
-    await deleteAllData(adminClient);
+    const deletedCounts = await deleteAllData(adminClient);
+    const remainingCounts = await getTableCounts(adminClient, ["areas", "projects", "tasks", "checklists"]);
+    const stillHasRows = Object.values(remainingCounts).some((v) => Number(v) > 0);
     output.write("reset mode: all data in areas/projects/tasks/checklists was deleted.\n");
+    output.write(`reset delete counts: ${JSON.stringify(deletedCounts)}\n`);
+    output.write(`reset remaining counts: ${JSON.stringify(remainingCounts)}\n`);
+    if (stillHasRows) {
+      throw new Error("Reset verification failed: some rows still remain in target tables.");
+    }
+    if (args.resetOnly) {
+      output.write("reset-only mode: finished after delete verification.\n");
+      return;
+    }
   } else {
     output.write("append mode: keeping existing data and adding seed data.\n");
+    if (args.resetOnly) {
+      throw new Error("--reset-only can only be used with --mode=reset");
+    }
   }
 
   const today = formatDateLocal(new Date());
