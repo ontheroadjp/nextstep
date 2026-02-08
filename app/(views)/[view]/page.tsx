@@ -831,7 +831,7 @@ const handleTaskClick = async (task: Task) => {
 
               {!needsGrouping && view !== "upcoming" && view !== "logbook" && (
                 <TaskList
-                  items={view === "someday" ? sortDatedByDateAscThenCreatedDesc(state.items) : sortMixedByDateAndCreated(state.items)}
+                  items={sortMixedByDateAndCreated(state.items)}
                   editing={editing}
                   isLocked={isLocked}
                   isLogbook={isLogbook}
@@ -1245,7 +1245,7 @@ function buildTaskGroups(items: Task[], projects: ProjectRef[], areas: AreaRef[]
     href?: string;
   }> = [];
   if (noGroup.length > 0) {
-    const sortedNoGroup = view === "someday" ? sortDatedByDateAscThenCreatedDesc(noGroup) : sortMixedByDateAndCreated(noGroup);
+    const sortedNoGroup = sortMixedByDateAndCreated(noGroup);
     sections.push({ key: "nogroup", title: null, items: sortedNoGroup });
   }
 
@@ -1258,7 +1258,7 @@ function buildTaskGroups(items: Task[], projects: ProjectRef[], areas: AreaRef[]
     return aOrder - bOrder;
   });
   for (const [id, group] of sortedProjects) {
-    const items = view === "someday" ? sortDatedByDateAscThenCreatedDesc(group.items) : sortMixedByDateAndCreated(group.items);
+    const items = sortMixedByDateAndCreated(group.items);
     sections.push({
       key: `project-${id}`,
       title: group.title,
@@ -1277,7 +1277,7 @@ function buildTaskGroups(items: Task[], projects: ProjectRef[], areas: AreaRef[]
     return aOrder - bOrder;
   });
   for (const [id, group] of sortedAreas) {
-    const items = view === "someday" ? sortDatedByDateAscThenCreatedDesc(group.items) : sortMixedByDateAndCreated(group.items);
+    const items = sortMixedByDateAndCreated(group.items);
     sections.push({
       key: `area-${id}`,
       title: group.title,
