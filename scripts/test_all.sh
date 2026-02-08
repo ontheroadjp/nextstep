@@ -9,13 +9,9 @@ if [[ -f .env ]]; then
 fi
 
 base_url=${BASE_URL:-http://localhost:3000}
-TOKEN=$(node scripts/get_access_token.mjs | tr -d '\r\n')
-if [[ -z "${TOKEN}" ]]; then
-  echo "Failed to get access token" 1>&2
-  exit 1
-fi
-
-header_auth=("-H" "Authorization: Bearer $TOKEN")
+# shellcheck disable=SC1091
+source scripts/test_auth_common.sh
+init_auth_header
 
 test_prefix=${TEST_PREFIX:-[TEST] }
 

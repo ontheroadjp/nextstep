@@ -8,12 +8,6 @@ if [[ -f .env ]]; then
   set +a
 fi
 
-TOKEN=$(node scripts/get_access_token.mjs | tr -d '\r\n')
-if [[ -z "${TOKEN}" ]]; then
-  echo "Failed to get access token" 1>&2
-  exit 1
-fi
-
 base_url=${BASE_URL:-http://localhost:3000}
 
 # Compute today/tomorrow with JST offset (540 minutes) to match API default tests.
@@ -32,7 +26,9 @@ print(now.strftime('%Y-%m-%d'))
 PY
 )
 
-header_auth=("-H" "Authorization: Bearer $TOKEN")
+# shellcheck disable=SC1091
+source scripts/test_auth_common.sh
+init_auth_header
 
 run() {
   printf "\n# %s\n" "$1"
