@@ -19,6 +19,9 @@ describe("access token clear button", () => {
     expect(source).toContain("Clear");
     expect(source).toContain('setAccessToken("")');
     expect(source).toContain('setRefreshToken("")');
+    expect(source).toContain("type AuthState");
+    expect(source).toContain("refresh_missing");
+    expect(source).toContain("access_missing");
   });
 
   it.each(targets)("uses shared footer component in %s", (path) => {
