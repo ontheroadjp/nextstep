@@ -1,4 +1,4 @@
-export type MonitorEventType = "api_error" | "api_auth_failure" | "api_latency";
+export type MonitorEventType = "api_error" | "api_auth_failure" | "api_latency" | "api_rate_limited";
 export type MonitorSeverity = "info" | "warn" | "error";
 
 export type MonitorEvent = {

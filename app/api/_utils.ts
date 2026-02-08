@@ -1,3 +1,4 @@
+import { checkApiProtectionRateLimit } from "../_lib/api_protection";
 import { emitMonitoringEvent, getLatencyThresholdMs } from "../_lib/monitoring";
 
 export type ApiErrorCode =
@@ -6,6 +7,7 @@ export type ApiErrorCode =
   | "unauthorized"
   | "forbidden"
   | "not_found"
+  | "too_many_requests"
   | "internal_error";
 
 export function json(data: unknown, init: ResponseInit = {}): Response {
@@ -55,6 +57,32 @@ export function withApiMonitoring<TContext>(
   return async (request: Request, context?: TContext): Promise<Response> => {
     const startedAt = Date.now();
     try {
+      const protection = checkApiProtectionRateLimit(request);
+      if (protection && !protection.allowed) {
+        const route = new URL(request.url).pathname;
+        const method = request.method;
+        void emitMonitoringEvent({
+          type: "api_rate_limited",
+          severity: "warn",
+          message: "API rate limit exceeded",
+          method,
+          route,
+          status: 429,
+        });
+        return json(
+          { error: { code: "too_many_requests", message: "Rate limit exceeded" } },
+          {
+            status: 429,
+            headers: {
+              "retry-after": String(protection.retryAfterSec),
+              "x-rate-limit-limit": String(protection.limit),
+              "x-rate-limit-remaining": String(protection.remaining),
+              "x-rate-limit-reset": String(protection.resetAt),
+            },
+          }
+        );
+      }
+
       const response =
         context === undefined
           ? await (handler as ApiRouteHandlerNoContext)(request)
