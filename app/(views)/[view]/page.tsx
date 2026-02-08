@@ -38,6 +38,18 @@ type Editing = EditFields & {
 
 type AreaRef = { id: string; name: string };
 type ProjectRef = { id: string; name: string; areaId: string | null };
+type UpcomingSection =
+  | { key: string; kind: "day"; dayNumber: number; label: string; items: Task[] }
+  | {
+      key: string;
+      kind: "range";
+      title: string;
+      monthLabel: string;
+      rangeLabel: string;
+      items: Task[];
+    }
+  | { key: string; kind: "month"; title: string; items: Task[] }
+  | { key: string; kind: "year"; title: string; items: Task[] };
 
 type ViewState =
   | { status: "idle" }
@@ -551,11 +563,10 @@ const handleTaskClick = async (task: Task) => {
   return { groups: buildTaskGroups(state.items, projects, areas, view), evening: [] as Task[] };
   }, [state, needsGrouping, projects, areas, view, today, eveningMap]);
 
-  const upcomingGroups = useMemo(() => {
+  const upcomingSections = useMemo(() => {
     if (state.status !== "ready") return [];
-    if (Array.isArray(state.groups)) return state.groups;
-    return groupByDate(state.items);
-  }, [state]);
+    return buildUpcomingSections(state.items, today);
+  }, [state, today]);
 
   const logbookGroups = useMemo(() => {
     if (state.status !== "ready") return [];
@@ -712,7 +723,7 @@ const handleTaskClick = async (task: Task) => {
                         onFocusTarget={handleFocusTarget}
                         onInputFocus={handleFocus}
                         onBlurSave={handleBlurSave}
-                        onEdit={handleTaskClick}
+                        onEdit={startEdit}
                         onEditChange={handleEditChange}
                         onToggleComplete={toggleComplete}
                         onDelete={handleDelete}
@@ -755,37 +766,49 @@ const handleTaskClick = async (task: Task) => {
 
               {!needsGrouping && view === "upcoming" && (
                 <div className="group-list">
-                  {upcomingGroups.length === 0 && <p className="muted">No tasks</p>}
-                  {upcomingGroups.map((group) => (
-                    <div key={group.date} className="date-group">
-                      <div className="date-line">
-                        <span>{group.date}</span>
-                      </div>
-                      <TaskList
-                        items={group.items}
-                        editing={editing}
-                        isLocked={isLocked}
-                        isLogbook={isLogbook}
-                        today={today}
-                        eveningMap={eveningMap}
-                        isEditScheduleOpen={isEditScheduleOpen}
-                        setIsEditScheduleOpen={setIsEditScheduleOpen}
-                        editRowRef={editRowRef}
-                        isClosing={isClosing}
-                        isOpening={isOpening}
-                        isEditReady={isEditReady}
-                        setIsEditReady={setIsEditReady}
-                        editTitleRef={editTitleRef}
-                        editNoteRef={editNoteRef}
-                        onFocusTarget={handleFocusTarget}
-                        onInputFocus={handleFocus}
-                        onBlurSave={handleBlurSave}
-                        onEdit={handleTaskClick}
-                        onEditChange={handleEditChange}
-                        onToggleComplete={toggleComplete}
-                        onDelete={handleDelete}
-                        editMessage={editMessage}
-                      />
+                  {upcomingSections.length === 0 && <p className="muted">No tasks</p>}
+                  {upcomingSections.map((section) => (
+                    <div key={section.key} className="upcoming-section">
+                      {section.kind === "day" ? (
+                        <div className="upcoming-day-header">
+                          <span className="upcoming-day-number">{section.dayNumber}</span>
+                          <span className="upcoming-day-label">{section.label}</span>
+                        </div>
+                      ) : section.kind === "range" ? (
+                        <div className="upcoming-period-header">
+                          <span className="upcoming-range-month">{section.monthLabel}</span>
+                          <span className="upcoming-range-tail">{section.rangeLabel}</span>
+                        </div>
+                      ) : (
+                        <div className="upcoming-period-header">{section.title}</div>
+                      )}
+                      {section.items.length > 0 && (
+                        <TaskList
+                          items={section.items}
+                          editing={editing}
+                          isLocked={isLocked}
+                          isLogbook={isLogbook}
+                          today={today}
+                          eveningMap={eveningMap}
+                          isEditScheduleOpen={isEditScheduleOpen}
+                          setIsEditScheduleOpen={setIsEditScheduleOpen}
+                          editRowRef={editRowRef}
+                          isClosing={isClosing}
+                          isOpening={isOpening}
+                          isEditReady={isEditReady}
+                          setIsEditReady={setIsEditReady}
+                          editTitleRef={editTitleRef}
+                          editNoteRef={editNoteRef}
+                          onFocusTarget={handleFocusTarget}
+                          onInputFocus={handleFocus}
+                          onBlurSave={handleBlurSave}
+                          onEdit={handleTaskClick}
+                          onEditChange={handleEditChange}
+                          onToggleComplete={toggleComplete}
+                          onDelete={handleDelete}
+                          editMessage={editMessage}
+                        />
+                      )}
                     </div>
                   ))}
                 </div>
@@ -818,7 +841,7 @@ const handleTaskClick = async (task: Task) => {
                         onFocusTarget={handleFocusTarget}
                         onInputFocus={handleFocus}
                         onBlurSave={handleBlurSave}
-                        onEdit={startEdit}
+                        onEdit={handleTaskClick}
                         onEditChange={handleEditChange}
                         onToggleComplete={toggleComplete}
                         onDelete={handleDelete}
@@ -1290,16 +1313,128 @@ function buildTaskGroups(items: Task[], projects: ProjectRef[], areas: AreaRef[]
   return sections;
 }
 
-function groupByDate(items: Task[]) {
+export function buildUpcomingSections(items: Task[], today: string): UpcomingSection[] {
+  const todayParts = parseDateString(today);
+  if (!todayParts) return [];
+
   const byDate = new Map<string, Task[]>();
   for (const item of items) {
     if (!item.date) continue;
     if (!byDate.has(item.date)) byDate.set(item.date, []);
     byDate.get(item.date)?.push(item);
   }
-  return [...byDate.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, list]) => ({ date, items: list }));
+  for (const [date, list] of byDate.entries()) {
+    const sorted = sortDatedByDateAscThenCreatedDesc(list);
+    byDate.set(date, sorted);
+  }
+
+  const sections: UpcomingSection[] = [];
+  const todayNum = dateToNumber(today);
+
+  for (let diff = 1; diff <= 7; diff += 1) {
+    const date = numberToDateString(todayNum + diff);
+    const parsed = parseDateString(date);
+    if (!parsed) continue;
+    sections.push({
+      key: `day-${date}`,
+      kind: "day",
+      dayNumber: parsed.day,
+      label: getUpcomingDayLabel(date, today),
+      items: byDate.get(date) ?? [],
+    });
+  }
+
+  const rangeStart = numberToDateString(todayNum + 8);
+  const endOfCurrentMonth = formatDateString(
+    todayParts.year,
+    todayParts.month,
+    new Date(Date.UTC(todayParts.year, todayParts.month + 1, 0)).getUTCDate()
+  );
+  const rangeStartNum = dateToNumber(rangeStart);
+  const endOfCurrentMonthNum = dateToNumber(endOfCurrentMonth);
+  if (rangeStartNum <= endOfCurrentMonthNum) {
+    sections.push({
+      key: `range-${rangeStart}-${endOfCurrentMonth}`,
+      kind: "range",
+      title: `${formatMonthLong(todayParts.year, todayParts.month)} ${dateRangeLabel(rangeStart, endOfCurrentMonth)}`,
+      monthLabel: formatMonthLong(todayParts.year, todayParts.month),
+      rangeLabel: dateRangeLabel(rangeStart, endOfCurrentMonth),
+      items: collectItemsByRange(byDate, rangeStartNum, endOfCurrentMonthNum),
+    });
+  }
+
+  for (let monthOffset = 1; monthOffset <= 3; monthOffset += 1) {
+    const target = shiftMonth(todayParts.year, todayParts.month, monthOffset);
+    const monthStart = formatDateString(target.year, target.month, 1);
+    const monthEnd = formatDateString(
+      target.year,
+      target.month,
+      new Date(Date.UTC(target.year, target.month + 1, 0)).getUTCDate()
+    );
+    sections.push({
+      key: `month-${target.year}-${target.month}`,
+      kind: "month",
+      title: formatMonthLong(target.year, target.month),
+      items: collectItemsByRange(byDate, dateToNumber(monthStart), dateToNumber(monthEnd)),
+    });
+  }
+
+  const month4 = shiftMonth(todayParts.year, todayParts.month, 4);
+  const month4StartNum = dateToNumber(formatDateString(month4.year, month4.month, 1));
+  const yearGroups = new Map<number, Task[]>();
+  for (const [date, list] of byDate.entries()) {
+    const num = dateToNumber(date);
+    if (num < month4StartNum) continue;
+    const parsed = parseDateString(date);
+    if (!parsed) continue;
+    if (!yearGroups.has(parsed.year)) yearGroups.set(parsed.year, []);
+    yearGroups.get(parsed.year)?.push(...list);
+  }
+  const sortedYears = [...yearGroups.keys()].sort((a, b) => a - b);
+  for (const year of sortedYears) {
+    sections.push({
+      key: `year-${year}`,
+      kind: "year",
+      title: String(year),
+      items: sortDatedByDateAscThenCreatedDesc(yearGroups.get(year) ?? []),
+    });
+  }
+
+  return sections;
+}
+
+function collectItemsByRange(byDate: Map<string, Task[]>, startNum: number, endNum: number) {
+  const rows: Task[] = [];
+  for (const [date, list] of byDate.entries()) {
+    const num = dateToNumber(date);
+    if (num < startNum || num > endNum) continue;
+    rows.push(...list);
+  }
+  return sortDatedByDateAscThenCreatedDesc(rows);
+}
+
+function numberToDateString(dayNum: number) {
+  const date = new Date(dayNum * 86400000);
+  return formatDateString(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+}
+
+function getUpcomingDayLabel(date: string, today: string) {
+  const diff = dateToNumber(date) - dateToNumber(today);
+  if (diff === 1) return "Tomorrow";
+  return new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(
+    new Date(`${date}T00:00:00Z`)
+  );
+}
+
+function formatMonthLong(year: number, month: number) {
+  return new Intl.DateTimeFormat("en-US", { month: "long" }).format(new Date(Date.UTC(year, month, 1)));
+}
+
+function dateRangeLabel(start: string, end: string) {
+  const s = parseDateString(start);
+  const e = parseDateString(end);
+  if (!s || !e) return "";
+  return `${s.day}\u2013${e.day}`;
 }
 
 function buildLogbookGroups(items: Task[], today: string, tzOffsetMinutes: number) {

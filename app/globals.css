@@ -900,6 +900,93 @@ textarea.note-input {
   gap: 10px;
 }
 
+.upcoming-section {
+  display: grid;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.upcoming-section + .upcoming-section {
+  margin-top: 15px;
+}
+
+.upcoming-day-header {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 10px;
+}
+
+.upcoming-day-number {
+  font-size: 36px;
+  line-height: 1;
+  font-weight: 700;
+  color: #3e434a;
+}
+
+.upcoming-day-label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  font-size: 14px;
+  line-height: 1.1;
+  font-weight: 600;
+  color: #8d9299;
+  min-height: 36px;
+  padding-top: 10px;
+}
+
+.upcoming-day-label::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  border-top: 1px solid #d4d8dd;
+}
+
+.upcoming-period-header {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  font-size: 16px;
+  line-height: 1.1;
+  font-weight: 700;
+  color: #4b5158;
+  min-height: 24px;
+  padding-top: 10px;
+  gap: 6px;
+}
+
+.upcoming-period-header::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  border-top: 1px solid #d4d8dd;
+}
+
+.upcoming-range-month {
+  color: #4b5158;
+}
+
+.upcoming-range-tail {
+  color: #8d9299;
+}
+
+@media (max-width: 700px) {
+  .upcoming-day-number {
+    font-size: 36px;
+  }
+  .upcoming-day-label {
+    font-size: 14px;
+  }
+  .upcoming-period-header {
+    font-size: 16px;
+  }
+}
+
 .date-line {
   position: relative;
   display: flex;

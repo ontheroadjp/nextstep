@@ -107,6 +107,7 @@
 ### View（`app/(views)/[view]/page.tsx`）
 - セクション構成: `.hero.page` + `.page-mid-header` + `.grid` + `.footer-panel`
 - 一覧/カード: `.view-card.full`, `.task-list`, `.grouped-grid`, `.group-card`, `.group-list`, `.date-group`
+- Upcoming 区切り: `.upcoming-section`, `.upcoming-day-header`, `.upcoming-day-number`, `.upcoming-day-label`, `.upcoming-period-header`, `.upcoming-range-month`, `.upcoming-range-tail`
 - 入力/編集: `.title-input`, `.note-input`, `.task-details`, `.task-details-inner`
 - 追加/操作: `.fab-add`, `.logbook-stack-button`, `.icon-button`, `.pill`, `.toolbar`
 - 中間ヘッダー: `.page-mid-header`（固定表示）, `.page-mid-header-link`（トップページリンク）

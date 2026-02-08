@@ -39,7 +39,7 @@
 根拠: `app/api/tasks/route.ts`, `app/api/tasks/[id]/route.ts`, `app/api/_helpers.ts`
 
 ## Task 一覧 UI の並び順
-- Upcoming: 日付昇順（変更なし）
+- Upcoming: 明日〜7日後は日単位（左大数字=日付）、8日目〜今月末は月内レンジ、来月〜3ヶ月は月単位、4ヶ月目以降は年単位で区切って表示
 - Logbook: 完了日（`archived_at`）降順（変更なし）
 - Today: Project/Area/No Group の順で表示し、その後に This Evening を表示
 - Inbox/Anytime/Someday/Area/Project: 日付なし → 日付ありの順で並べ、日付なしは `created_at` 降順、日付ありは `date` 昇順 + `created_at` 降順
