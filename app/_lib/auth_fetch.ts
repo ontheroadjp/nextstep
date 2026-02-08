@@ -26,6 +26,25 @@ function withBearer(headers: Headers, accessToken: string) {
   }
 }
 
+function getLocalStorage(): Storage | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+async function sendWithBearer(
+  input: RequestInfo | URL,
+  init: RequestInit,
+  accessToken: string
+) {
+  const headers = new Headers(init.headers ?? {});
+  withBearer(headers, accessToken);
+  return fetch(input, { ...init, headers });
+}
+
 async function refreshSession(refreshToken: string): Promise<RefreshedSession | null> {
   const token = refreshToken.trim();
   if (!token) return null;
@@ -59,27 +78,28 @@ async function refreshSession(refreshToken: string): Promise<RefreshedSession | 
   return refreshInFlight;
 }
 
+function applyRefreshedSession(auth: AuthState, refreshed: RefreshedSession) {
+  auth.setAccessToken(refreshed.accessToken);
+  auth.setRefreshToken(refreshed.refreshToken);
+
+  const storage = getLocalStorage();
+  if (!storage) return;
+  storage.setItem(ACCESS_TOKEN_KEY, refreshed.accessToken);
+  storage.setItem(REFRESH_TOKEN_KEY, refreshed.refreshToken);
+}
+
 export async function fetchWithAutoRefresh(
   input: RequestInfo | URL,
-  init: RequestInit,
+  init: RequestInit = {},
   auth: AuthState
 ) {
-  const send = async (accessToken: string) => {
-    const headers = new Headers(init.headers ?? {});
-    withBearer(headers, accessToken);
-    return fetch(input, { ...init, headers });
-  };
-
-  const first = await send(auth.accessToken);
+  const first = await sendWithBearer(input, init, auth.accessToken);
   if (first.status !== 401) return first;
 
   const refreshed = await refreshSession(auth.refreshToken);
   if (!refreshed) return first;
 
-  auth.setAccessToken(refreshed.accessToken);
-  auth.setRefreshToken(refreshed.refreshToken);
-  window.localStorage.setItem(ACCESS_TOKEN_KEY, refreshed.accessToken);
-  window.localStorage.setItem(REFRESH_TOKEN_KEY, refreshed.refreshToken);
+  applyRefreshedSession(auth, refreshed);
 
-  return send(refreshed.accessToken);
+  return sendWithBearer(input, init, refreshed.accessToken);
 }
