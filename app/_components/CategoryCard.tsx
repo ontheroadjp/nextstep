@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 
 type ViewStatus = "idle" | "loading" | "error" | "ready";
 
@@ -35,11 +36,5 @@ export function CategoryCard({
     </div>
   );
 
-  return href ? (
-    <a className="card-link" href={href}>
-      {body}
-    </a>
-  ) : (
-    body
-  );
+  return href ? <Link className="card-link" href={href}>{body}</Link> : body;
 }

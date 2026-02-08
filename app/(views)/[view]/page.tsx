@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { AccessSettingsFooter } from "../../_components/AccessSettingsFooter";
 import { CategoryCard } from "../../_components/CategoryCard";
 import { PageHero } from "../../_components/PageHero";
@@ -10,6 +11,7 @@ import { useStoredJson, useStoredValue } from "../../_hooks/useStoredState";
 import { DEFAULT_TZ_OFFSET, getScheduleLabel, getTodayString } from "../../_lib/date";
 import { formatOverdueDaysAgo } from "../../_lib/overdue";
 import { sortDatedByDateAscThenCreatedDesc, sortMixedByDateAndCreated } from "../../_lib/task_sort";
+import { buildUpcomingSections, type UpcomingSection } from "../../_lib/upcoming_sections";
 
 type Task = {
   id: string;
@@ -38,30 +40,11 @@ type Editing = EditFields & {
 
 type AreaRef = { id: string; name: string };
 type ProjectRef = { id: string; name: string; areaId: string | null };
-type UpcomingSection =
-  | { key: string; kind: "day"; dayNumber: number; label: string; items: Task[] }
-  | {
-      key: string;
-      kind: "range";
-      title: string;
-      monthLabel: string;
-      rangeLabel: string;
-      items: Task[];
-    }
-  | { key: string; kind: "month"; title: string; items: Task[] }
-  | { key: string; kind: "year"; title: string; items: Task[] };
-
 type ViewState =
   | { status: "idle" }
   | { status: "loading" }
   | { status: "error"; message: string }
   | { status: "ready"; items: Task[]; groups?: Array<{ date: string; items: Task[] }> };
-
-type CardState =
-  | { status: "idle" }
-  | { status: "loading" }
-  | { status: "error"; message: string }
-  | { status: "ready"; items: Task[] };
 
 const ALLOWED_VIEWS = new Set(["today", "upcoming", "anytime", "someday", "logbook", "inbox"]);
 
@@ -75,8 +58,6 @@ export default function ViewPage() {
     {}
   );
   const [state, setState] = useState<ViewState>({ status: "idle" });
-  const [todayCard, setTodayCard] = useState<CardState>({ status: "idle" });
-  const [inboxCard, setInboxCard] = useState<CardState>({ status: "idle" });
   const [areas, setAreas] = useState<AreaRef[]>([]);
   const [projects, setProjects] = useState<ProjectRef[]>([]);
   const [isEditScheduleOpen, setIsEditScheduleOpen] = useState(false);
@@ -167,29 +148,6 @@ export default function ViewPage() {
     } catch {
       // ignore
     }
-  };
-
-  const fetchCard = async (path: string, setter: (state: CardState) => void) => {
-    setter({ status: "loading" });
-    try {
-      const res = await fetch(path, { headers });
-      const json = await res.json();
-      if (!res.ok) {
-        setter({ status: "error", message: json?.error?.message ?? "Request failed" });
-        return;
-      }
-      setter({ status: "ready", items: (json.items ?? []) as Task[] });
-    } catch (err) {
-      setter({ status: "error", message: err instanceof Error ? err.message : "Request failed" });
-    }
-  };
-
-  const fetchHeaderCards = async () => {
-    if (!canFetch) return;
-    await Promise.all([
-      fetchCard("/api/today", setTodayCard),
-      fetchCard("/api/inbox", setInboxCard),
-    ]);
   };
 
   const createTaskAndEdit = async () => {
@@ -505,11 +463,6 @@ const handleTaskClick = async (task: Task) => {
   }, [canFetch, view]);
 
   useEffect(() => {
-    if (canFetch) fetchHeaderCards();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canFetch, view]);
-
-  useEffect(() => {
     if (!editing) return;
     const handleClick = (event: MouseEvent) => {
       if (!editRowRef.current) return;
@@ -534,9 +487,9 @@ const handleTaskClick = async (task: Task) => {
           <div className="panel">
             <h1>Not Found</h1>
             <p className="muted">このカテゴリは存在しません。</p>
-            <a className="pill-link" href="/">
+            <Link className="pill-link" href="/">
               Back
-            </a>
+            </Link>
           </div>
         </div>
       </main>
@@ -573,17 +526,14 @@ const handleTaskClick = async (task: Task) => {
     const offset = Number(tzOffset);
     return buildLogbookGroups(state.items, today, Number.isFinite(offset) ? offset : 0);
   }, [state, today, tzOffset]);
-  const todayCount =
-    todayCard.status === "ready" ? splitOverdue(todayCard.items, today) : { overdue: 0, rest: 0 };
-  const inboxCount =
-    inboxCard.status === "ready" ? splitOverdue(inboxCard.items, today) : { overdue: 0, rest: 0 };
+  const headerCounts = state.status === "ready" ? splitOverdue(state.items, today) : { overdue: 0, rest: 0 };
   const headerCard = useMemo(() => {
     if (view === "today") {
       return {
         title: "Today",
-        status: todayCard.status,
-        detail: `Overdue ${todayCount.overdue} / Today ${todayCount.rest}`,
-        showDetail: todayCard.status === "ready",
+        status: state.status,
+        detail: `Overdue ${headerCounts.overdue} / Today ${headerCounts.rest}`,
+        showDetail: state.status === "ready",
         icon: <i className="fa-solid fa-star icon-today" aria-hidden />,
       };
     }
@@ -617,12 +567,12 @@ const handleTaskClick = async (task: Task) => {
     }
     return {
       title: "Inbox",
-      status: inboxCard.status,
-      detail: `Overdue ${inboxCount.overdue} / Others ${inboxCount.rest}`,
-      showDetail: inboxCard.status === "ready",
+      status: state.status,
+      detail: `Overdue ${headerCounts.overdue} / Others ${headerCounts.rest}`,
+      showDetail: state.status === "ready",
       icon: <i className="fa-solid fa-inbox icon-inbox" aria-hidden />,
     };
-  }, [view, state.status, todayCard.status, todayCount.overdue, todayCount.rest, inboxCard.status, inboxCount.overdue, inboxCount.rest]);
+  }, [view, state.status, headerCounts.overdue, headerCounts.rest]);
   const pageTitle = view.toUpperCase();
 
   return (
@@ -669,28 +619,37 @@ const handleTaskClick = async (task: Task) => {
                       {group.title && (
                         <div className={`group-header${isLocked ? " is-disabled" : ""}`}>
                           {group.href ? (
-                            <a
-                              className="group-header-link"
-                              href={isLocked ? undefined : group.href}
-                              aria-disabled={isLocked}
-                              tabIndex={isLocked ? -1 : 0}
-                              onClick={(event) => {
-                                if (isLocked) event.preventDefault();
-                              }}
-                            >
-                              <div className="group-title">
-                                {group.kind === "project" && (
-                                  <i className="fa-solid fa-tachometer icon-project" aria-hidden />
-                                )}
-                                {group.kind === "area" && (
-                                  <i className="fa-solid fa-cube icon-area" aria-hidden />
-                                )}
-                                {group.title}
-                              </div>
-                              <span className="chevron-link" aria-hidden="true">
-                                <i className="fa-solid fa-chevron-right" aria-hidden />
+                            isLocked ? (
+                              <span className="group-header-link" aria-disabled="true">
+                                <div className="group-title">
+                                  {group.kind === "project" && (
+                                    <i className="fa-solid fa-tachometer icon-project" aria-hidden />
+                                  )}
+                                  {group.kind === "area" && (
+                                    <i className="fa-solid fa-cube icon-area" aria-hidden />
+                                  )}
+                                  {group.title}
+                                </div>
+                                <span className="chevron-link" aria-hidden="true">
+                                  <i className="fa-solid fa-chevron-right" aria-hidden />
+                                </span>
                               </span>
-                            </a>
+                            ) : (
+                              <Link className="group-header-link" href={group.href}>
+                                <div className="group-title">
+                                  {group.kind === "project" && (
+                                    <i className="fa-solid fa-tachometer icon-project" aria-hidden />
+                                  )}
+                                  {group.kind === "area" && (
+                                    <i className="fa-solid fa-cube icon-area" aria-hidden />
+                                  )}
+                                  {group.title}
+                                </div>
+                                <span className="chevron-link" aria-hidden="true">
+                                  <i className="fa-solid fa-chevron-right" aria-hidden />
+                                </span>
+                              </Link>
+                            )
                           ) : (
                             <div className="group-title">
                               {group.kind === "project" && (
@@ -901,7 +860,6 @@ const handleTaskClick = async (task: Task) => {
         onRefresh={() => {
           fetchView();
           fetchMeta();
-          fetchHeaderCards();
         }}
         canFetch={canFetch}
       />
@@ -1311,130 +1269,6 @@ function buildTaskGroups(items: Task[], projects: ProjectRef[], areas: AreaRef[]
   }
 
   return sections;
-}
-
-export function buildUpcomingSections(items: Task[], today: string): UpcomingSection[] {
-  const todayParts = parseDateString(today);
-  if (!todayParts) return [];
-
-  const byDate = new Map<string, Task[]>();
-  for (const item of items) {
-    if (!item.date) continue;
-    if (!byDate.has(item.date)) byDate.set(item.date, []);
-    byDate.get(item.date)?.push(item);
-  }
-  for (const [date, list] of byDate.entries()) {
-    const sorted = sortDatedByDateAscThenCreatedDesc(list);
-    byDate.set(date, sorted);
-  }
-
-  const sections: UpcomingSection[] = [];
-  const todayNum = dateToNumber(today);
-
-  for (let diff = 1; diff <= 7; diff += 1) {
-    const date = numberToDateString(todayNum + diff);
-    const parsed = parseDateString(date);
-    if (!parsed) continue;
-    sections.push({
-      key: `day-${date}`,
-      kind: "day",
-      dayNumber: parsed.day,
-      label: getUpcomingDayLabel(date, today),
-      items: byDate.get(date) ?? [],
-    });
-  }
-
-  const rangeStart = numberToDateString(todayNum + 8);
-  const endOfCurrentMonth = formatDateString(
-    todayParts.year,
-    todayParts.month,
-    new Date(Date.UTC(todayParts.year, todayParts.month + 1, 0)).getUTCDate()
-  );
-  const rangeStartNum = dateToNumber(rangeStart);
-  const endOfCurrentMonthNum = dateToNumber(endOfCurrentMonth);
-  if (rangeStartNum <= endOfCurrentMonthNum) {
-    sections.push({
-      key: `range-${rangeStart}-${endOfCurrentMonth}`,
-      kind: "range",
-      title: `${formatMonthLong(todayParts.year, todayParts.month)} ${dateRangeLabel(rangeStart, endOfCurrentMonth)}`,
-      monthLabel: formatMonthLong(todayParts.year, todayParts.month),
-      rangeLabel: dateRangeLabel(rangeStart, endOfCurrentMonth),
-      items: collectItemsByRange(byDate, rangeStartNum, endOfCurrentMonthNum),
-    });
-  }
-
-  for (let monthOffset = 1; monthOffset <= 3; monthOffset += 1) {
-    const target = shiftMonth(todayParts.year, todayParts.month, monthOffset);
-    const monthStart = formatDateString(target.year, target.month, 1);
-    const monthEnd = formatDateString(
-      target.year,
-      target.month,
-      new Date(Date.UTC(target.year, target.month + 1, 0)).getUTCDate()
-    );
-    sections.push({
-      key: `month-${target.year}-${target.month}`,
-      kind: "month",
-      title: formatMonthLong(target.year, target.month),
-      items: collectItemsByRange(byDate, dateToNumber(monthStart), dateToNumber(monthEnd)),
-    });
-  }
-
-  const month4 = shiftMonth(todayParts.year, todayParts.month, 4);
-  const month4StartNum = dateToNumber(formatDateString(month4.year, month4.month, 1));
-  const yearGroups = new Map<number, Task[]>();
-  for (const [date, list] of byDate.entries()) {
-    const num = dateToNumber(date);
-    if (num < month4StartNum) continue;
-    const parsed = parseDateString(date);
-    if (!parsed) continue;
-    if (!yearGroups.has(parsed.year)) yearGroups.set(parsed.year, []);
-    yearGroups.get(parsed.year)?.push(...list);
-  }
-  const sortedYears = [...yearGroups.keys()].sort((a, b) => a - b);
-  for (const year of sortedYears) {
-    sections.push({
-      key: `year-${year}`,
-      kind: "year",
-      title: String(year),
-      items: sortDatedByDateAscThenCreatedDesc(yearGroups.get(year) ?? []),
-    });
-  }
-
-  return sections;
-}
-
-function collectItemsByRange(byDate: Map<string, Task[]>, startNum: number, endNum: number) {
-  const rows: Task[] = [];
-  for (const [date, list] of byDate.entries()) {
-    const num = dateToNumber(date);
-    if (num < startNum || num > endNum) continue;
-    rows.push(...list);
-  }
-  return sortDatedByDateAscThenCreatedDesc(rows);
-}
-
-function numberToDateString(dayNum: number) {
-  const date = new Date(dayNum * 86400000);
-  return formatDateString(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
-}
-
-function getUpcomingDayLabel(date: string, today: string) {
-  const diff = dateToNumber(date) - dateToNumber(today);
-  if (diff === 1) return "Tomorrow";
-  return new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(
-    new Date(`${date}T00:00:00Z`)
-  );
-}
-
-function formatMonthLong(year: number, month: number) {
-  return new Intl.DateTimeFormat("en-US", { month: "long" }).format(new Date(Date.UTC(year, month, 1)));
-}
-
-function dateRangeLabel(start: string, end: string) {
-  const s = parseDateString(start);
-  const e = parseDateString(end);
-  if (!s || !e) return "";
-  return `${s.day}\u2013${e.day}`;
 }
 
 function buildLogbookGroups(items: Task[], today: string, tzOffsetMinutes: number) {
