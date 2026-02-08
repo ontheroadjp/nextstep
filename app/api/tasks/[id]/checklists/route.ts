@@ -1,5 +1,5 @@
 import { createServerClient } from "../../../_supabase";
-import { error, json } from "../../../_utils";
+import { error, json, withApiMonitoring } from "../../../_utils";
 import { nonEmptyString, readJson, requireUserContext } from "../../../_helpers";
 
 type ChecklistCreateInput = {
@@ -8,7 +8,7 @@ type ChecklistCreateInput = {
   sortKey?: string | null;
 };
 
-export async function POST(
+async function _POST(
   request: Request,
   context: { params: Promise<{ id: string }> }
 ): Promise<Response> {
@@ -45,3 +45,5 @@ export async function POST(
 
   return json({ item: data }, { status: 201 });
 }
+
+export const POST = withApiMonitoring(_POST);

@@ -1,3 +1,5 @@
+import { emitMonitoringEvent, getLatencyThresholdMs } from "../_lib/monitoring";
+
 export type ApiErrorCode =
   | "not_implemented"
   | "bad_request"
@@ -16,4 +18,106 @@ export function error(code: ApiErrorCode, message: string, status = 400): Respon
 
 export function notImplemented(message: string): Response {
   return error("not_implemented", message, 501);
+}
+
+type ApiRouteHandlerNoContext = (request: Request) => Promise<Response> | Response;
+type ApiRouteHandlerWithContext<TContext> = (
+  request: Request,
+  context: TContext
+) => Promise<Response> | Response;
+
+type ErrorBody = {
+  error?: {
+    code?: string;
+    message?: string;
+  };
+};
+
+async function extractErrorFields(response: Response): Promise<{
+  code?: string;
+  message?: string;
+}> {
+  try {
+    const body = (await response.clone().json()) as ErrorBody;
+    return { code: body.error?.code, message: body.error?.message };
+  } catch {
+    return {};
+  }
+}
+
+export function withApiMonitoring(handler: ApiRouteHandlerNoContext): ApiRouteHandlerNoContext;
+export function withApiMonitoring<TContext>(
+  handler: ApiRouteHandlerWithContext<TContext>
+): ApiRouteHandlerWithContext<TContext>;
+export function withApiMonitoring<TContext>(
+  handler: ApiRouteHandlerNoContext | ApiRouteHandlerWithContext<TContext>
+) {
+  return async (request: Request, context?: TContext): Promise<Response> => {
+    const startedAt = Date.now();
+    try {
+      const response =
+        context === undefined
+          ? await (handler as ApiRouteHandlerNoContext)(request)
+          : await (handler as ApiRouteHandlerWithContext<TContext>)(request, context);
+      const durationMs = Date.now() - startedAt;
+      const thresholdMs = getLatencyThresholdMs();
+      const route = new URL(request.url).pathname;
+      const method = request.method;
+      const status = response.status;
+
+      if (durationMs >= thresholdMs) {
+        void emitMonitoringEvent({
+          type: "api_latency",
+          severity: "warn",
+          message: "API latency threshold exceeded",
+          method,
+          route,
+          status,
+          durationMs,
+        });
+      }
+
+      if (status === 401) {
+        void emitMonitoringEvent({
+          type: "api_auth_failure",
+          severity: "warn",
+          message: "API unauthorized response",
+          method,
+          route,
+          status,
+        });
+      }
+
+      if (status >= 500) {
+        const fields = await extractErrorFields(response);
+        void emitMonitoringEvent({
+          type: "api_error",
+          severity: "error",
+          message: "API internal error response",
+          method,
+          route,
+          status,
+          errorCode: fields.code,
+          errorMessage: fields.message,
+        });
+      }
+
+      return response;
+    } catch (err) {
+      const durationMs = Date.now() - startedAt;
+      const route = new URL(request.url).pathname;
+      const method = request.method;
+      void emitMonitoringEvent({
+        type: "api_error",
+        severity: "error",
+        message: "Unhandled API exception",
+        method,
+        route,
+        status: 500,
+        durationMs,
+        errorMessage: err instanceof Error ? err.message : "Unknown exception",
+      });
+      throw err;
+    }
+  };
 }

@@ -1,5 +1,5 @@
 import { createServerClient } from "../_supabase";
-import { error, json } from "../_utils";
+import { error, json, withApiMonitoring } from "../_utils";
 import { ensureOwnedReference, nonEmptyString, readJson, requireUserContext } from "../_helpers";
 
 type ProjectCreateInput = {
@@ -9,7 +9,7 @@ type ProjectCreateInput = {
   sortKey?: string | null;
 };
 
-export async function GET(request: Request): Promise<Response> {
+async function _GET(request: Request): Promise<Response> {
   const admin = createServerClient();
   const auth = await requireUserContext(admin, request);
   if (auth instanceof Response) return auth;
@@ -28,7 +28,7 @@ export async function GET(request: Request): Promise<Response> {
   return json({ items: data ?? [] });
 }
 
-export async function POST(request: Request): Promise<Response> {
+async function _POST(request: Request): Promise<Response> {
   const admin = createServerClient();
   const auth = await requireUserContext(admin, request);
   if (auth instanceof Response) return auth;
@@ -72,3 +72,7 @@ export async function POST(request: Request): Promise<Response> {
 
   return json({ item: data }, { status: 201 });
 }
+
+export const GET = withApiMonitoring(_GET);
+
+export const POST = withApiMonitoring(_POST);

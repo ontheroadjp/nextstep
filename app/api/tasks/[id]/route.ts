@@ -1,5 +1,5 @@
 import { createServerClient } from "../../_supabase";
-import { error, json } from "../../_utils";
+import { error, json, withApiMonitoring } from "../../_utils";
 import {
   ensureOwnedReference,
   getProjectAreaId,
@@ -22,7 +22,7 @@ type TaskUpdateInput = {
   sortKey?: string | null;
 };
 
-export async function PATCH(
+async function _PATCH(
   request: Request,
   context: { params: Promise<{ id: string }> }
 ): Promise<Response> {
@@ -119,7 +119,7 @@ export async function PATCH(
   return json({ item: mapTask(data as Record<string, unknown>) });
 }
 
-export async function DELETE(
+async function _DELETE(
   request: Request,
   context: { params: Promise<{ id: string }> }
 ): Promise<Response> {
@@ -140,3 +140,7 @@ export async function DELETE(
 
   return json({ ok: true });
 }
+
+export const PATCH = withApiMonitoring(_PATCH);
+
+export const DELETE = withApiMonitoring(_DELETE);

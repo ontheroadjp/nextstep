@@ -1,9 +1,9 @@
 import { createServerClient } from "../_supabase";
-import { error, json } from "../_utils";
+import { error, json, withApiMonitoring } from "../_utils";
 import { mapTask, requireUserContext } from "../_helpers";
 import { fetchLogbook } from "../_queries";
 
-export async function GET(request: Request): Promise<Response> {
+async function _GET(request: Request): Promise<Response> {
   const admin = createServerClient();
   const auth = await requireUserContext(admin, request);
   if (auth instanceof Response) return auth;
@@ -15,3 +15,5 @@ export async function GET(request: Request): Promise<Response> {
 
   return json({ items: (data ?? []).map(mapTask) });
 }
+
+export const GET = withApiMonitoring(_GET);
