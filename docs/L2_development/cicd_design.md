@@ -28,3 +28,11 @@
   - `MONITORING_LATENCY_THRESHOLD_MS`（レイテンシ通知閾値、既定 1500ms）
 
 根拠: `app/_lib/monitoring.ts`, `app/api/_utils.ts`
+
+## API 保護設定（アプリ内）
+- API rate limit 関連環境変数:
+  - `API_RATE_LIMIT_WINDOW_MS`（固定窓ミリ秒、既定 60000）
+  - `API_RATE_LIMIT_MAX_AUTH`（認証系上限、既定 60）
+  - `API_RATE_LIMIT_MAX_WRITE`（更新系上限、既定 300）
+
+根拠: `app/_lib/api_protection.ts`, `app/api/_utils.ts`

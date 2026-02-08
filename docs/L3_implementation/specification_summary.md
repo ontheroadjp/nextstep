@@ -7,8 +7,10 @@
 - ユーザー ID は `requireUserContext` で取得し、以降の DB 操作に利用する。
 - API route ハンドラは `withApiMonitoring` でラップされ、`401`（認証失敗）, `5xx`（内部エラー）, レイテンシ閾値超過を監視イベントとして出力する。
 - Slack 通知は `MONITORING_SLACK_WEBHOOK_URL` 設定時のみ有効で、同一キー通知は `MONITORING_SLACK_COOLDOWN_MS` で抑制する。
+- API 保護として、認証系 (`/api/auth/*`) と更新系（`POST/PATCH/DELETE/PUT`）に rate limit を適用する。
+- 上限超過時は `429` と `too_many_requests` を返し、`retry-after` と rate-limit ヘッダを返す。
 
-根拠: `app/api/_helpers.ts`, `app/api/_supabase.ts`, `app/api/auth/login/route.ts`, `app/api/auth/refresh/route.ts`, `app/api/_utils.ts`, `app/_lib/monitoring.ts`
+根拠: `app/api/_helpers.ts`, `app/api/_supabase.ts`, `app/api/auth/login/route.ts`, `app/api/auth/refresh/route.ts`, `app/api/_utils.ts`, `app/_lib/monitoring.ts`, `app/_lib/api_protection.ts`
 
 ## ヘルスチェック
 - `GET /api/health/live` は常に 200 を返し、アプリ生存状態を返す。
