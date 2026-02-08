@@ -1,5 +1,5 @@
 import { createServerClient } from "../_supabase";
-import { error, json } from "../_utils";
+import { error, json, withApiMonitoring } from "../_utils";
 import {
   ensureOwnedReference,
   getProjectAreaId,
@@ -19,7 +19,7 @@ type TaskCreateInput = {
   projectId?: string | null;
 };
 
-export async function POST(request: Request): Promise<Response> {
+async function _POST(request: Request): Promise<Response> {
   const admin = createServerClient();
   const auth = await requireUserContext(admin, request);
   if (auth instanceof Response) return auth;
@@ -91,3 +91,5 @@ export async function POST(request: Request): Promise<Response> {
 
   return json({ item: mapTask(data as Record<string, unknown>) }, { status: 201 });
 }
+
+export const POST = withApiMonitoring(_POST);

@@ -1,9 +1,9 @@
 import { createServerClient } from "../../../_supabase";
-import { error, json } from "../../../_utils";
+import { error, json, withApiMonitoring } from "../../../_utils";
 import { mapTask, requireUserContext, todayFromRequest } from "../../../_helpers";
 import { fetchUpcoming } from "../../../_queries";
 
-export async function GET(request: Request, context: { params: Promise<{ areaId: string }> }): Promise<Response> {
+async function _GET(request: Request, context: { params: Promise<{ areaId: string }> }): Promise<Response> {
   const admin = createServerClient();
   const auth = await requireUserContext(admin, request);
   if (auth instanceof Response) return auth;
@@ -33,3 +33,5 @@ export async function GET(request: Request, context: { params: Promise<{ areaId:
 
   return json({ groups: result });
 }
+
+export const GET = withApiMonitoring(_GET);

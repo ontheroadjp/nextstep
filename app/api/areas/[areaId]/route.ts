@@ -1,5 +1,5 @@
 import { createServerClient } from "../../_supabase";
-import { error, json } from "../../_utils";
+import { error, json, withApiMonitoring } from "../../_utils";
 import { nonEmptyString, readJson, requireUserContext } from "../../_helpers";
 import { baseTaskSelect } from "../../_queries";
 
@@ -8,7 +8,7 @@ type AreaUpdateInput = {
   sortKey?: string | null;
 };
 
-export async function GET(
+async function _GET(
   request: Request,
   context: { params: Promise<{ areaId: string }> }
 ): Promise<Response> {
@@ -54,7 +54,7 @@ export async function GET(
   return json({ item, tasks: tasks ?? [], projects: projects ?? [] });
 }
 
-export async function PATCH(
+async function _PATCH(
   request: Request,
   context: { params: Promise<{ areaId: string }> }
 ): Promise<Response> {
@@ -102,7 +102,7 @@ export async function PATCH(
   return json({ item: data });
 }
 
-export async function DELETE(
+async function _DELETE(
   request: Request,
   context: { params: Promise<{ areaId: string }> }
 ): Promise<Response> {
@@ -123,3 +123,9 @@ export async function DELETE(
 
   return json({ ok: true });
 }
+
+export const GET = withApiMonitoring(_GET);
+
+export const PATCH = withApiMonitoring(_PATCH);
+
+export const DELETE = withApiMonitoring(_DELETE);

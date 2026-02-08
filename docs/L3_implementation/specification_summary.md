@@ -5,8 +5,10 @@
 - `POST /api/auth/login` は `provider` と認証情報を受け取り、新しい `accessToken` / `refreshToken` を返す。
 - `POST /api/auth/refresh` は `refreshToken` を受け取り、新しい `accessToken` / `refreshToken` を返す。
 - ユーザー ID は `requireUserContext` で取得し、以降の DB 操作に利用する。
+- API route ハンドラは `withApiMonitoring` でラップされ、`401`（認証失敗）, `5xx`（内部エラー）, レイテンシ閾値超過を監視イベントとして出力する。
+- Slack 通知は `MONITORING_SLACK_WEBHOOK_URL` 設定時のみ有効で、同一キー通知は `MONITORING_SLACK_COOLDOWN_MS` で抑制する。
 
-根拠: `app/api/_helpers.ts`, `app/api/_supabase.ts`, `app/api/auth/login/route.ts`, `app/api/auth/refresh/route.ts`
+根拠: `app/api/_helpers.ts`, `app/api/_supabase.ts`, `app/api/auth/login/route.ts`, `app/api/auth/refresh/route.ts`, `app/api/_utils.ts`, `app/_lib/monitoring.ts`
 
 ## 日付境界と today
 - `x-tz-offset-minutes` を受け取り、UTC 日付を補正して `today` を算出する。

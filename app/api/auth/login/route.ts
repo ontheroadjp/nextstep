@@ -1,5 +1,5 @@
 import { createServerClient } from "../../_supabase";
-import { error, json } from "../../_utils";
+import { error, json, withApiMonitoring } from "../../_utils";
 import { nonEmptyString, readJson } from "../../_helpers";
 
 type LoginInput = {
@@ -8,7 +8,7 @@ type LoginInput = {
   password?: string;
 };
 
-export async function POST(request: Request): Promise<Response> {
+async function _POST(request: Request): Promise<Response> {
   const body = await readJson<LoginInput>(request);
   if (body instanceof Response) return body;
 
@@ -38,3 +38,5 @@ export async function POST(request: Request): Promise<Response> {
     },
   });
 }
+
+export const POST = withApiMonitoring(_POST);

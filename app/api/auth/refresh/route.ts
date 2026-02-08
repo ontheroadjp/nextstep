@@ -1,12 +1,12 @@
 import { createServerClient } from "../../_supabase";
-import { error, json } from "../../_utils";
+import { error, json, withApiMonitoring } from "../../_utils";
 import { nonEmptyString, readJson } from "../../_helpers";
 
 type RefreshInput = {
   refreshToken?: string;
 };
 
-export async function POST(request: Request): Promise<Response> {
+async function _POST(request: Request): Promise<Response> {
   const body = await readJson<RefreshInput>(request);
   if (body instanceof Response) return body;
 
@@ -31,3 +31,5 @@ export async function POST(request: Request): Promise<Response> {
     },
   });
 }
+
+export const POST = withApiMonitoring(_POST);
