@@ -74,12 +74,13 @@
 - フッターは `Access Token` / `Refresh Token` / `TZ Offset` と `Refresh` / `Clear` を表示し、`Clear` で認証トークンを同時に空にできる。
 - 画面横断で再利用する UI は `app/_components` に集約する（`CategoryCard`, `PageHero`, `PageMidHeader`, `AccessSettingsFooter`）。
 - `localStorage` 読み書きは `app/_hooks/useStoredState.ts`（`useStoredValue`, `useStoredJson`）を利用する。
+- トークン状態（`accessToken`/`refreshToken`/`tzOffset`）と `x-tz-offset-minutes` ヘッダ生成は `app/_hooks/useClientAuth.ts` に共通化し、`app/page.tsx` / `app/(views)/[view]/page.tsx` / `app/areas/[areaId]/page.tsx` / `app/projects/[projectId]/page.tsx` が利用する。
 - `useStoredValue` は初回 hydration 完了前に `localStorage` へ書き戻さない（初期空文字で既存 token を上書きしない）。
 - 日付表示の共通計算は `app/_lib/date.ts`（`DEFAULT_TZ_OFFSET`, `getTodayString`, `getScheduleLabel`）を利用する。
 - `app/(views)/[view]/page.tsx` は `today/anytime/someday` のメタ情報（`areas/projects`）を token 単位でキャッシュし、View 間遷移時の重複取得を抑制する（`Refresh` は強制再取得）。
-- クライアントの API 呼び出しは `useAuthedFetch`（内部で `fetchWithAutoRefresh` を利用）を通し、`401` 受信時は `refreshToken` で 1 回だけ再発行後に再試行する。
+- クライアントの API 呼び出しは `useClientAuth` が返す `authedFetch`（内部で `useAuthedFetch` / `fetchWithAutoRefresh` を利用）を通し、`401` 受信時は `refreshToken` で 1 回だけ再発行後に再試行する。
 
-根拠: `app/page.tsx`, `app/(views)/[view]/page.tsx`, `app/areas/[areaId]/page.tsx`, `app/projects/[projectId]/page.tsx`, `app/_components/AccessSettingsFooter.tsx`, `app/_components/CategoryCard.tsx`, `app/_components/PageHero.tsx`, `app/_components/PageMidHeader.tsx`, `app/_hooks/useStoredState.ts`, `app/_lib/date.ts`, `app/globals.css`
+根拠: `app/page.tsx`, `app/(views)/[view]/page.tsx`, `app/areas/[areaId]/page.tsx`, `app/projects/[projectId]/page.tsx`, `app/_components/AccessSettingsFooter.tsx`, `app/_components/CategoryCard.tsx`, `app/_components/PageHero.tsx`, `app/_components/PageMidHeader.tsx`, `app/_hooks/useClientAuth.ts`, `app/_hooks/useStoredState.ts`, `app/_lib/date.ts`, `app/globals.css`
 
 ## Task 編集 UI のフォーカス挙動
 - タスク編集時は最後にタップした入力（Title / Note）を `lastFocusRef` で記録し、編集有効化時に該当の入力へフォーカスを移す。

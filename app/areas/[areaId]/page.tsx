@@ -5,9 +5,9 @@ import { useParams } from "next/navigation";
 import { AccessSettingsFooter } from "../../_components/AccessSettingsFooter";
 import { PageHero } from "../../_components/PageHero";
 import { PageMidHeader } from "../../_components/PageMidHeader";
-import { useAuthedFetch } from "../../_hooks/useAuthedFetch";
-import { useStoredJson, useStoredValue } from "../../_hooks/useStoredState";
-import { DEFAULT_TZ_OFFSET, getScheduleLabel, getTodayString } from "../../_lib/date";
+import { useClientAuth } from "../../_hooks/useClientAuth";
+import { useStoredJson } from "../../_hooks/useStoredState";
+import { getScheduleLabel, getTodayString } from "../../_lib/date";
 import { formatOverdueDaysAgo } from "../../_lib/overdue";
 import { sortMixedByDateAndCreated } from "../../_lib/task_sort";
 
@@ -43,9 +43,16 @@ type AreaState =
 export default function AreaPage() {
   const params = useParams();
   const areaId = String(params.areaId ?? "");
-  const [accessToken, setAccessToken] = useStoredValue("ns-access-token", "");
-  const [refreshToken, setRefreshToken] = useStoredValue("ns-refresh-token", "");
-  const [tzOffset, setTzOffset] = useStoredValue("ns-tz-offset", DEFAULT_TZ_OFFSET);
+  const {
+    accessToken,
+    setAccessToken,
+    refreshToken,
+    setRefreshToken,
+    tzOffset,
+    setTzOffset,
+    headers,
+    authedFetch,
+  } = useClientAuth();
   const [eveningMap, setEveningMap] = useStoredJson<Record<string, boolean>>(
     "ns-evening-map",
     {}
@@ -66,13 +73,6 @@ export default function AreaPage() {
 
   const canFetch = accessToken.trim().length > 0 && areaId.length > 0;
   const isLocked = Boolean(editing);
-  const authedFetch = useAuthedFetch(accessToken, refreshToken, setAccessToken, setRefreshToken);
-
-  const headers = useMemo(() => {
-    const h = new Headers();
-    if (tzOffset.trim()) h.set("x-tz-offset-minutes", tzOffset.trim());
-    return h;
-  }, [tzOffset]);
 
   const today = useMemo(() => {
     const offset = Number(tzOffset);

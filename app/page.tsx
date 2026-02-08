@@ -4,9 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { AccessSettingsFooter } from "./_components/AccessSettingsFooter";
 import { CategoryCard } from "./_components/CategoryCard";
 import { PageHero } from "./_components/PageHero";
-import { useStoredValue } from "./_hooks/useStoredState";
-import { fetchWithAutoRefresh } from "./_lib/auth_fetch";
-import { DEFAULT_TZ_OFFSET, getTodayString } from "./_lib/date";
+import { useClientAuth } from "./_hooks/useClientAuth";
+import { getTodayString } from "./_lib/date";
 
 type Task = {
   id: string;
@@ -48,34 +47,26 @@ function splitOverdue(items: Task[], today: string) {
 }
 
 export default function HomePage() {
-  const [accessToken, setAccessToken] = useStoredValue("ns-access-token", "");
-  const [refreshToken, setRefreshToken] = useStoredValue("ns-refresh-token", "");
-  const [tzOffset, setTzOffset] = useStoredValue("ns-tz-offset", DEFAULT_TZ_OFFSET);
+  const {
+    accessToken,
+    setAccessToken,
+    refreshToken,
+    setRefreshToken,
+    tzOffset,
+    setTzOffset,
+    headers,
+    authedFetch,
+  } = useClientAuth();
   const [today, setToday] = useState<DataState<Task>>({ status: "idle" });
   const [inbox, setInbox] = useState<DataState<Task>>({ status: "idle" });
   const [areas, setAreas] = useState<DataState<Area>>({ status: "idle" });
 
   const canFetch = accessToken.trim().length > 0;
 
-  const headers = useMemo(() => {
-    const h = new Headers();
-    if (tzOffset.trim()) h.set("x-tz-offset-minutes", tzOffset.trim());
-    return h;
-  }, [tzOffset]);
-
   const fetchView = async <T,>(path: string, setter: (state: DataState<T>) => void) => {
     setter({ status: "loading" });
     try {
-      const res = await fetchWithAutoRefresh(
-        path,
-        { headers },
-        {
-          accessToken,
-          refreshToken,
-          setAccessToken,
-          setRefreshToken,
-        }
-      );
+      const res = await authedFetch(path, { headers });
       const json = await res.json();
       if (!res.ok) {
         setter({ status: "error", message: json?.error?.message ?? "Request failed" });
