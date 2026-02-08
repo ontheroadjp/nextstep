@@ -23,6 +23,12 @@
 
 根拠: `app/api/*/route.ts`
 
+## ヘルスチェック API
+- `GET /api/health/live`（liveness: アプリ生存確認）
+- `GET /api/health/ready`（readiness: 必須環境変数確認。`SUPABASE_URL` / `SUPABASE_ANON_KEY` が欠落時は 503）
+
+根拠: `app/api/health/live/route.ts`, `app/api/health/ready/route.ts`
+
 ## エンティティ API
 - Areas: `GET/POST /api/areas`, `GET/PATCH/DELETE /api/areas/{areaId}`
 - Projects: `GET/POST /api/projects`, `GET/PATCH/DELETE /api/projects/{projectId}`
