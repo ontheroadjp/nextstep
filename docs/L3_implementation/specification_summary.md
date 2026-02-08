@@ -77,7 +77,7 @@
 - `useStoredValue` は初回 hydration 完了前に `localStorage` へ書き戻さない（初期空文字で既存 token を上書きしない）。
 - 日付表示の共通計算は `app/_lib/date.ts`（`DEFAULT_TZ_OFFSET`, `getTodayString`, `getScheduleLabel`）を利用する。
 - `app/(views)/[view]/page.tsx` は `today/anytime/someday` のメタ情報（`areas/projects`）を token 単位でキャッシュし、View 間遷移時の重複取得を抑制する（`Refresh` は強制再取得）。
-- クライアントの API 呼び出しは `fetchWithAutoRefresh` を通し、`401` 受信時は `refreshToken` で 1 回だけ再発行後に再試行する。
+- クライアントの API 呼び出しは `useAuthedFetch`（内部で `fetchWithAutoRefresh` を利用）を通し、`401` 受信時は `refreshToken` で 1 回だけ再発行後に再試行する。
 
 根拠: `app/page.tsx`, `app/(views)/[view]/page.tsx`, `app/areas/[areaId]/page.tsx`, `app/projects/[projectId]/page.tsx`, `app/_components/AccessSettingsFooter.tsx`, `app/_components/CategoryCard.tsx`, `app/_components/PageHero.tsx`, `app/_components/PageMidHeader.tsx`, `app/_hooks/useStoredState.ts`, `app/_lib/date.ts`, `app/globals.css`
 

@@ -5,8 +5,8 @@ import { useParams } from "next/navigation";
 import { AccessSettingsFooter } from "../../_components/AccessSettingsFooter";
 import { PageHero } from "../../_components/PageHero";
 import { PageMidHeader } from "../../_components/PageMidHeader";
+import { useAuthedFetch } from "../../_hooks/useAuthedFetch";
 import { useStoredJson, useStoredValue } from "../../_hooks/useStoredState";
-import { fetchWithAutoRefresh } from "../../_lib/auth_fetch";
 import { DEFAULT_TZ_OFFSET, getScheduleLabel, getTodayString } from "../../_lib/date";
 import { formatOverdueDaysAgo } from "../../_lib/overdue";
 import { sortMixedByDateAndCreated } from "../../_lib/task_sort";
@@ -70,6 +70,7 @@ export default function ProjectPage() {
 
   const canFetch = accessToken.trim().length > 0 && projectId.length > 0;
   const isLocked = Boolean(editing);
+  const authedFetch = useAuthedFetch(accessToken, refreshToken, setAccessToken, setRefreshToken);
 
   const headers = useMemo(() => {
     const h = new Headers();
@@ -88,11 +89,7 @@ export default function ProjectPage() {
       setState({ status: "loading" });
     }
     try {
-      const res = await fetchWithAutoRefresh(
-        `/api/projects/${projectId}`,
-        { headers },
-        { accessToken, refreshToken, setAccessToken, setRefreshToken }
-      );
+      const res = await authedFetch(`/api/projects/${projectId}`, { headers });
       const json = await res.json();
       if (!res.ok) {
         setState({ status: "error", message: json?.error?.message ?? "Request failed" });
@@ -126,14 +123,13 @@ export default function ProjectPage() {
       projectId,
     };
     try {
-      const res = await fetchWithAutoRefresh(
+      const res = await authedFetch(
         "/api/tasks",
         {
           method: "POST",
           headers,
           body: JSON.stringify(payload),
-        },
-        { accessToken, refreshToken, setAccessToken, setRefreshToken }
+        }
       );
       const json = await res.json();
       if (!res.ok) {
@@ -206,14 +202,13 @@ export default function ProjectPage() {
       someday: editing.someday,
     };
     try {
-      const res = await fetchWithAutoRefresh(
+      const res = await authedFetch(
         `/api/tasks/${editing.id}`,
         {
           method: "PATCH",
           headers,
           body: JSON.stringify(payload),
-        },
-        { accessToken, refreshToken, setAccessToken, setRefreshToken }
+        }
       );
       const json = await res.json();
       if (!res.ok) {
@@ -363,14 +358,13 @@ const handleTaskClick = async (task: Task) => {
       };
     });
     try {
-      await fetchWithAutoRefresh(
+      await authedFetch(
         `/api/tasks/${task.id}`,
         {
           method: "PATCH",
           headers,
           body: JSON.stringify({ completedAt: nextCompletedAt }),
-        },
-        { accessToken, refreshToken, setAccessToken, setRefreshToken }
+        }
       );
       fetchProject({ silent: true });
     } catch {
@@ -383,14 +377,13 @@ const handleTaskClick = async (task: Task) => {
     const targets = state.tasks.filter((t) => t.completedAt && !t.archivedAt);
     if (targets.length === 0) return;
     for (const task of targets) {
-      await fetchWithAutoRefresh(
+      await authedFetch(
         `/api/tasks/${task.id}`,
         {
           method: "PATCH",
           headers,
           body: JSON.stringify({ archivedAt: new Date().toISOString() }),
-        },
-        { accessToken, refreshToken, setAccessToken, setRefreshToken }
+        }
       );
     }
     fetchProject();
@@ -399,10 +392,9 @@ const handleTaskClick = async (task: Task) => {
   const handleDelete = async (task: Task) => {
     if (!accessToken.trim()) return;
     try {
-      await fetchWithAutoRefresh(
+      await authedFetch(
         `/api/tasks/${task.id}`,
-        { method: "DELETE", headers },
-        { accessToken, refreshToken, setAccessToken, setRefreshToken }
+        { method: "DELETE", headers }
       );
       fetchProject();
     } catch {
