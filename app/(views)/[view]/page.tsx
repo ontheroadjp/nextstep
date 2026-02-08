@@ -70,6 +70,7 @@ export default function ViewPage() {
   const editRowRef = useRef<HTMLDivElement | null>(null);
   const editTitleRef = useRef<HTMLInputElement | null>(null);
   const editNoteRef = useRef<HTMLTextAreaElement | null>(null);
+  const metaCacheRef = useRef<{ token: string; loaded: boolean }>({ token: "", loaded: false });
   const lastFocusRef = useRef<"title" | "note">("title");
   const createSavingRef = useRef(false);
   const savingEditRef = useRef(false);
@@ -118,8 +119,16 @@ export default function ViewPage() {
     }
   };
 
-  const fetchMeta = async () => {
+  const fetchMeta = async (opts?: { force?: boolean }) => {
     if (!canFetch || !needsGrouping) return;
+    const currentToken = token.trim();
+    if (
+      !opts?.force &&
+      metaCacheRef.current.loaded &&
+      metaCacheRef.current.token === currentToken
+    ) {
+      return;
+    }
     try {
       const [areasRes, projectsRes] = await Promise.all([
         fetch("/api/areas", { headers }),
@@ -144,6 +153,9 @@ export default function ViewPage() {
               }))
             : []
         );
+      }
+      if (areasRes.ok && projectsRes.ok) {
+        metaCacheRef.current = { token: currentToken, loaded: true };
       }
     } catch {
       // ignore
@@ -461,6 +473,12 @@ const handleTaskClick = async (task: Task) => {
     if (canFetch) fetchMeta();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canFetch, view]);
+
+  useEffect(() => {
+    metaCacheRef.current = { token: token.trim(), loaded: false };
+    setAreas([]);
+    setProjects([]);
+  }, [token]);
 
   useEffect(() => {
     if (!editing) return;
@@ -859,7 +877,7 @@ const handleTaskClick = async (task: Task) => {
         setTzOffset={setTzOffset}
         onRefresh={() => {
           fetchView();
-          fetchMeta();
+          fetchMeta({ force: true });
         }}
         canFetch={canFetch}
       />

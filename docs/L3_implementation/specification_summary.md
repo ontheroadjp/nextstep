@@ -73,7 +73,9 @@
 - Access Token 入力欄には `Refresh` と `Clear` があり、`Clear` で入力中トークンを空にできる。
 - 画面横断で再利用する UI は `app/_components` に集約する（`CategoryCard`, `PageHero`, `PageMidHeader`, `AccessSettingsFooter`）。
 - `localStorage` 読み書きは `app/_hooks/useStoredState.ts`（`useStoredValue`, `useStoredJson`）を利用する。
+- `useStoredValue` は初回 hydration 完了前に `localStorage` へ書き戻さない（初期空文字で既存 token を上書きしない）。
 - 日付表示の共通計算は `app/_lib/date.ts`（`DEFAULT_TZ_OFFSET`, `getTodayString`, `getScheduleLabel`）を利用する。
+- `app/(views)/[view]/page.tsx` は `today/anytime/someday` のメタ情報（`areas/projects`）を token 単位でキャッシュし、View 間遷移時の重複取得を抑制する（`Refresh` は強制再取得）。
 
 根拠: `app/page.tsx`, `app/(views)/[view]/page.tsx`, `app/areas/[areaId]/page.tsx`, `app/projects/[projectId]/page.tsx`, `app/_components/AccessSettingsFooter.tsx`, `app/_components/CategoryCard.tsx`, `app/_components/PageHero.tsx`, `app/_components/PageMidHeader.tsx`, `app/_hooks/useStoredState.ts`, `app/_lib/date.ts`, `app/globals.css`
 
