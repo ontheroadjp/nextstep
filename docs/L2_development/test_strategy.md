@@ -40,8 +40,9 @@
 - API ルート（Tasks/Areas/Projects/Checklists/Views）
 - RLS を含むアクセス制御
 - View 編集フォーカスの挙動（入力開始時に全選択しない）
+- View Someday グルーピングの並び順ルール（Today と同一）
 
-根拠: `tests/api/*.test.ts`, `tests/integration/*.test.ts`, `tests/task_edit_focus_behavior.test.ts`, `docs/L1/05_testing.md`
+根拠: `tests/api/*.test.ts`, `tests/integration/*.test.ts`, `tests/task_edit_focus_behavior.test.ts`, `tests/someday_grouping_sort_rule.test.ts`, `docs/L1/05_testing.md`
 
 ## 未確認事項
 - E2E テスト（Playwright/Cypress 等）の導入有無
