@@ -1,8 +1,10 @@
 import type { Dispatch, SetStateAction } from "react";
 
 type AccessSettingsFooterProps = {
-  token: string;
-  setToken: Dispatch<SetStateAction<string>>;
+  accessToken: string;
+  setAccessToken: Dispatch<SetStateAction<string>>;
+  refreshToken: string;
+  setRefreshToken: Dispatch<SetStateAction<string>>;
   tzOffset: string;
   setTzOffset: Dispatch<SetStateAction<string>>;
   onRefresh: () => void;
@@ -10,8 +12,10 @@ type AccessSettingsFooterProps = {
 };
 
 export function AccessSettingsFooter({
-  token,
-  setToken,
+  accessToken,
+  setAccessToken,
+  refreshToken,
+  setRefreshToken,
   tzOffset,
   setTzOffset,
   onRefresh,
@@ -23,9 +27,18 @@ export function AccessSettingsFooter({
         <label>
           Access Token
           <textarea
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            placeholder="x-access-token を貼り付け"
+            value={accessToken}
+            onChange={(e) => setAccessToken(e.target.value)}
+            placeholder="Bearer access token を貼り付け"
+            rows={3}
+          />
+        </label>
+        <label>
+          Refresh Token
+          <textarea
+            value={refreshToken}
+            onChange={(e) => setRefreshToken(e.target.value)}
+            placeholder="refresh token を貼り付け"
             rows={3}
           />
         </label>
@@ -37,7 +50,14 @@ export function AccessSettingsFooter({
           <button onClick={onRefresh} disabled={!canFetch}>
             Refresh
           </button>
-          <button onClick={() => setToken("")}>Clear</button>
+          <button
+            onClick={() => {
+              setAccessToken("");
+              setRefreshToken("");
+            }}
+          >
+            Clear
+          </button>
           {!canFetch && <span className="hint">token を入れると取得できます</span>}
         </div>
       </div>

@@ -7,6 +7,11 @@
 
 根拠: `app/api/_helpers.ts`, `docs/L1/04_api_contract.md`
 
+## 認証 API
+- `POST /api/auth/refresh`（`refreshToken` を受け取り、`accessToken` / `refreshToken` を再発行）
+
+根拠: `app/api/auth/refresh/route.ts`
+
 ## ビュー API
 - `GET /api/today`
 - `GET /api/upcoming`

@@ -32,7 +32,7 @@ export async function getAccessToken(email: string, password: string): Promise<s
 
 export async function apiFetch(path: string, token: string, init: RequestInit = {}) {
   const headers = new Headers(init.headers || {});
-  headers.set("x-access-token", token);
+  headers.set("Authorization", `Bearer ${token}`);
   if (!headers.has("Content-Type") && init.body) {
     headers.set("Content-Type", "application/json");
   }

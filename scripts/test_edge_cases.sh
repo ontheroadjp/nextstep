@@ -15,7 +15,7 @@ if [[ -z "${TOKEN}" ]]; then
   exit 1
 fi
 
-header_auth=("-H" "x-access-token: $TOKEN")
+header_auth=("-H" "Authorization: Bearer $TOKEN")
 
 test_prefix=${TEST_PREFIX:-[TEST] }
 
@@ -219,7 +219,7 @@ if [[ -n "${TEST_EMAIL_2:-}" && -n "${TEST_PASSWORD_2:-}" ]]; then
   if [[ -n "$TOKEN2" && -n "$INBOX_TODAY_ID" ]]; then
     run "RLS should deny update to other user's task" \
       curl -s -X PATCH "$base_url/api/tasks/$INBOX_TODAY_ID" \
-        -H "x-access-token: $TOKEN2" \
+        -H "Authorization: Bearer $TOKEN2" \
         -H "Content-Type: application/json" \
         -d '{"title":"HACKED"}'
   fi

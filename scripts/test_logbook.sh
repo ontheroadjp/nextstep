@@ -23,20 +23,20 @@ fi
 base_url=${BASE_URL:-http://localhost:3000}
 
 curl -s -X PATCH "$base_url/api/tasks/$TASK_ID" \
-  -H "x-access-token: $TOKEN" \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"completedAt":"2026-01-30T00:00:00Z"}' | cat
 
 echo ""
 
 curl -s -X PATCH "$base_url/api/tasks/$TASK_ID" \
-  -H "x-access-token: $TOKEN" \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"archivedAt":"2026-01-30T00:00:00Z"}' | cat
 
 echo ""
 
 curl -s "$base_url/api/logbook" \
-  -H "x-access-token: $TOKEN" | cat
+  -H "Authorization: Bearer $TOKEN" | cat
 
 echo ""

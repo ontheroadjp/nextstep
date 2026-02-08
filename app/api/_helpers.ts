@@ -83,7 +83,7 @@ export async function requireUserContext(
   request: Request
 ): Promise<{ userId: string; accessToken: string } | Response> {
   const authHeader = request.headers.get("authorization");
-  const bearerMatch = authHeader?.match(/^Bearer\\s+(.+)$/i);
+  const bearerMatch = authHeader?.match(/^Bearer\s+(.+)$/i);
   const altHeader = request.headers.get("x-access-token");
   const accessToken = bearerMatch?.[1] ?? altHeader ?? "";
   if (!accessToken) {

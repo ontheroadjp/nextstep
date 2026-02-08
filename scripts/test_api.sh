@@ -32,7 +32,7 @@ print(now.strftime('%Y-%m-%d'))
 PY
 )
 
-header_auth=("-H" "x-access-token: $TOKEN")
+header_auth=("-H" "Authorization: Bearer $TOKEN")
 
 run() {
   printf "\n# %s\n" "$1"
