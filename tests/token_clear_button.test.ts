@@ -5,7 +5,7 @@ function read(path: string) {
   return readFileSync(new URL(path, import.meta.url), "utf8");
 }
 
-describe("access token clear button", () => {
+describe("auth footer login/logout", () => {
   const targets = [
     "../app/page.tsx",
     "../app/(views)/[view]/page.tsx",
@@ -13,15 +13,16 @@ describe("access token clear button", () => {
     "../app/projects/[projectId]/page.tsx",
   ];
 
-  it("defines Clear button behavior in shared footer component", () => {
+  it("defines login/logout behavior in shared footer component", () => {
     const source = read("../app/_components/AccessSettingsFooter.tsx");
     expect(source).toContain("Refresh");
-    expect(source).toContain("Clear");
-    expect(source).toContain('setAccessToken("")');
-    expect(source).toContain('setRefreshToken("")');
-    expect(source).toContain("type AuthState");
-    expect(source).toContain("refresh_missing");
-    expect(source).toContain("access_missing");
+    expect(source).toContain("Login");
+    expect(source).toContain("Logout");
+    expect(source).toContain("Email");
+    expect(source).toContain("Password");
+    expect(source).toContain("authProvider");
+    expect(source).not.toContain("Access Token");
+    expect(source).not.toContain("Refresh Token");
   });
 
   it.each(targets)("uses shared footer component in %s", (path) => {
