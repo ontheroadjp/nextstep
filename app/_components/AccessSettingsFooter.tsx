@@ -1,5 +1,7 @@
 import type { Dispatch, SetStateAction } from "react";
 
+export type AuthState = "ready" | "refresh_missing" | "access_missing";
+
 type AccessSettingsFooterProps = {
   accessToken: string;
   setAccessToken: Dispatch<SetStateAction<string>>;
@@ -9,6 +11,7 @@ type AccessSettingsFooterProps = {
   setTzOffset: Dispatch<SetStateAction<string>>;
   onRefresh: () => void;
   canFetch: boolean;
+  authState: AuthState;
 };
 
 export function AccessSettingsFooter({
@@ -20,7 +23,13 @@ export function AccessSettingsFooter({
   setTzOffset,
   onRefresh,
   canFetch,
+  authState,
 }: AccessSettingsFooterProps) {
+  const hintByState: Record<Exclude<AuthState, "ready">, string> = {
+    access_missing: "access token を入れると取得できます",
+    refresh_missing: "refresh token を入れると自動更新できます",
+  };
+
   return (
     <footer className="footer-panel">
       <div className="panel">
@@ -58,7 +67,7 @@ export function AccessSettingsFooter({
           >
             Clear
           </button>
-          {!canFetch && <span className="hint">token を入れると取得できます</span>}
+          {authState !== "ready" && <span className="hint">{hintByState[authState]}</span>}
         </div>
       </div>
     </footer>

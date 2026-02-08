@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import { AccessSettingsFooter } from "../../_components/AccessSettingsFooter";
+import { AccessSettingsFooter, type AuthState } from "../../_components/AccessSettingsFooter";
 import { PageHero } from "../../_components/PageHero";
 import { PageMidHeader } from "../../_components/PageMidHeader";
 import { useClientAuth } from "../../_hooks/useClientAuth";
@@ -75,7 +75,10 @@ export default function ProjectPage() {
   const editTouchedRef = useRef(false);
   const suppressClickRef = useRef(false);
 
-  const canFetch = accessToken.trim().length > 0 && projectId.length > 0;
+  const accessReady = accessToken.trim().length > 0;
+  const refreshReady = refreshToken.trim().length > 0;
+  const canFetch = accessReady && projectId.length > 0;
+  const authState: AuthState = accessReady ? (refreshReady ? "ready" : "refresh_missing") : "access_missing";
   const isLocked = Boolean(editing);
 
   const today = useMemo(() => {
@@ -494,6 +497,7 @@ const handleTaskClick = async (task: Task) => {
         setTzOffset={setTzOffset}
         onRefresh={fetchProject}
         canFetch={canFetch}
+        authState={authState}
       />
     </main>
   );

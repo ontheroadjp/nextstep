@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { AccessSettingsFooter } from "../../_components/AccessSettingsFooter";
+import { AccessSettingsFooter, type AuthState } from "../../_components/AccessSettingsFooter";
 import { CategoryCard } from "../../_components/CategoryCard";
 import { PageHero } from "../../_components/PageHero";
 import { PageMidHeader } from "../../_components/PageMidHeader";
@@ -86,7 +86,10 @@ export default function ViewPage() {
   const editTouchedRef = useRef(false);
   const suppressClickRef = useRef(false);
 
-  const canFetch = accessToken.trim().length > 0 && ALLOWED_VIEWS.has(view);
+  const accessReady = accessToken.trim().length > 0;
+  const refreshReady = refreshToken.trim().length > 0;
+  const canFetch = accessReady && ALLOWED_VIEWS.has(view);
+  const authState: AuthState = accessReady ? (refreshReady ? "ready" : "refresh_missing") : "access_missing";
   const isLogbook = view === "logbook";
   const needsGrouping = view === "today" || view === "anytime" || view === "someday";
   const showThisEvening = view === "today";
@@ -899,6 +902,7 @@ const handleTaskClick = async (task: Task) => {
           fetchMeta({ force: true });
         }}
         canFetch={canFetch}
+        authState={authState}
       />
     </main>
   );

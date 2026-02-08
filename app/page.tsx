@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AccessSettingsFooter } from "./_components/AccessSettingsFooter";
+import { AccessSettingsFooter, type AuthState } from "./_components/AccessSettingsFooter";
 import { CategoryCard } from "./_components/CategoryCard";
 import { PageHero } from "./_components/PageHero";
 import { useClientAuth } from "./_hooks/useClientAuth";
@@ -61,7 +61,10 @@ export default function HomePage() {
   const [inbox, setInbox] = useState<DataState<Task>>({ status: "idle" });
   const [areas, setAreas] = useState<DataState<Area>>({ status: "idle" });
 
-  const canFetch = accessToken.trim().length > 0;
+  const accessReady = accessToken.trim().length > 0;
+  const refreshReady = refreshToken.trim().length > 0;
+  const canFetch = accessReady;
+  const authState: AuthState = accessReady ? (refreshReady ? "ready" : "refresh_missing") : "access_missing";
 
   const fetchView = async <T,>(path: string, setter: (state: DataState<T>) => void) => {
     setter({ status: "loading" });
@@ -170,6 +173,7 @@ export default function HomePage() {
         setTzOffset={setTzOffset}
         onRefresh={refreshAll}
         canFetch={canFetch}
+        authState={authState}
       />
     </main>
   );

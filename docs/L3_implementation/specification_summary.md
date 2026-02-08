@@ -72,6 +72,7 @@
 - `app/(views)/[view]/page.tsx` の No Group セクション（area/project 未所属タスク）は、専用クラスでタスク行左余白を調整し、Project/Area 見出しアイコンの左端と揃える。
 - Access Token / Refresh Token / TZ Offset は `localStorage` に保存する。
 - フッターは `Access Token` / `Refresh Token` / `TZ Offset` と `Refresh` / `Clear` を表示し、`Clear` で認証トークンを同時に空にできる。
+- `AccessSettingsFooter` は認証状態を `ready` / `refresh_missing` / `access_missing` で明示し、状態に応じたヒントを表示する（`access_missing`: access token 入力案内、`refresh_missing`: refresh token 入力案内）。
 - 画面横断で再利用する UI は `app/_components` に集約する（`CategoryCard`, `PageHero`, `PageMidHeader`, `AccessSettingsFooter`）。
 - `localStorage` 読み書きは `app/_hooks/useStoredState.ts`（`useStoredValue`, `useStoredJson`）を利用する。
 - トークン状態（`accessToken`/`refreshToken`/`tzOffset`）と `x-tz-offset-minutes` ヘッダ生成は `app/_hooks/useClientAuth.ts` に共通化し、`app/page.tsx` / `app/(views)/[view]/page.tsx` / `app/areas/[areaId]/page.tsx` / `app/projects/[projectId]/page.tsx` が利用する。
