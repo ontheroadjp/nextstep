@@ -13,6 +13,7 @@ Apply SQL files in the fixed order:
   1) db/migrations/0001_init.sql
   2) db/maintenance/0002_apply_sort_key_constraints.sql
   3) db/maintenance/0003_archive_flow.sql
+  4) db/maintenance/0004_add_task_deadline.sql
 EOF
 }
 
@@ -46,6 +47,7 @@ FILES=(
   "$ROOT_DIR/db/migrations/0001_init.sql"
   "$ROOT_DIR/db/maintenance/0002_apply_sort_key_constraints.sql"
   "$ROOT_DIR/db/maintenance/0003_archive_flow.sql"
+  "$ROOT_DIR/db/maintenance/0004_add_task_deadline.sql"
 )
 
 for file in "${FILES[@]}"; do

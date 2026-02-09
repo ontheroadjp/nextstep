@@ -27,6 +27,7 @@ vi.mock("../../app/api/_supabase", () => ({
                   title: "Task",
                   note: "Note",
                   date: null,
+                  deadline: null,
                   someday: false,
                   completed_at: null,
                   area_id: null,
@@ -159,5 +160,21 @@ describe("POST /api/tasks", () => {
     const res = await POST(req);
     expect(res.status).toBe(400);
     projectAreaId = null;
+  });
+
+  it("rejects deadline when someday=true", async () => {
+    const req = new Request("http://localhost", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: "Task",
+        note: "Note",
+        someday: true,
+        deadline: "2026-02-01",
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(400);
   });
 });

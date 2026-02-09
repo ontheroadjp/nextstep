@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { nonEmptyString, normalizeSomedayDate, todayFromRequest } from "../app/api/_helpers";
+import { nonEmptyString, normalizeTaskSchedule, todayFromRequest } from "../app/api/_helpers";
 
 describe("nonEmptyString", () => {
   it("returns true for non-empty strings", () => {
@@ -15,31 +15,47 @@ describe("nonEmptyString", () => {
   });
 });
 
-describe("normalizeSomedayDate", () => {
+describe("normalizeTaskSchedule", () => {
   it("forces date=null when someday=true", () => {
-    expect(normalizeSomedayDate({ date: "2026-01-30", someday: true })).toEqual({
+    expect(
+      normalizeTaskSchedule({
+        date: "2026-01-30",
+        deadline: "2026-02-01",
+        someday: true,
+      })
+    ).toEqual({
       date: null,
+      deadline: null,
       someday: true,
     });
   });
 
   it("forces someday=false when date is set", () => {
-    expect(normalizeSomedayDate({ date: "2026-01-30", someday: false })).toEqual({
+    expect(
+      normalizeTaskSchedule({
+        date: "2026-01-30",
+        deadline: "2026-02-01",
+        someday: false,
+      })
+    ).toEqual({
       date: "2026-01-30",
+      deadline: "2026-02-01",
       someday: false,
     });
   });
 
   it("keeps values when neither is set", () => {
-    expect(normalizeSomedayDate({})).toEqual({
+    expect(normalizeTaskSchedule({})).toEqual({
       date: undefined,
+      deadline: undefined,
       someday: undefined,
     });
   });
 
   it("keeps date when someday is undefined", () => {
-    expect(normalizeSomedayDate({ date: "2026-01-30" })).toEqual({
+    expect(normalizeTaskSchedule({ date: "2026-01-30", deadline: "2026-01-31" })).toEqual({
       date: "2026-01-30",
+      deadline: "2026-01-31",
       someday: false,
     });
   });

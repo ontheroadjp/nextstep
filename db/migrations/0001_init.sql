@@ -37,6 +37,7 @@ create table if not exists tasks (
   title text not null,
   note text not null,
   date date null,
+  deadline date null,
   someday boolean not null default false,
   completed_at timestamptz null,
   archived_at timestamptz null,
@@ -47,8 +48,10 @@ create table if not exists tasks (
   updated_at timestamptz not null default now(),
   constraint tasks_title_not_blank check (length(trim(title)) > 0),
   constraint tasks_sort_key_not_blank check (sort_key is null or length(trim(sort_key)) > 0),
-  -- Someday excludes date; date implies someday=false. date may be null with someday=false (Anytime).
-  constraint tasks_someday_date_exclusive check (someday = false or date is null),
+  -- Someday excludes schedule fields; date/deadline may be independently null when someday=false.
+  constraint tasks_someday_date_exclusive check (
+    someday = false or (date is null and deadline is null)
+  ),
   constraint tasks_archived_requires_completed check (archived_at is null or completed_at is not null)
 );
 

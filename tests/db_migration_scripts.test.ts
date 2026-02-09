@@ -22,6 +22,7 @@ describe("DB migration scripts", () => {
     expect(result.stdout).toContain("db/migrations/0001_init.sql");
     expect(result.stdout).toContain("db/maintenance/0002_apply_sort_key_constraints.sql");
     expect(result.stdout).toContain("db/maintenance/0003_archive_flow.sql");
+    expect(result.stdout).toContain("db/maintenance/0004_add_task_deadline.sql");
   });
 
   it("db_migrate.sh fails without DATABASE_URL when not dry-run", () => {
