@@ -10,6 +10,11 @@ import { PageMidHeader } from "../../_components/PageMidHeader";
 import { useClientAuth } from "../../_hooks/useClientAuth";
 import { useStoredJson } from "../../_hooks/useStoredState";
 import { getScheduleLabel, getTodayString } from "../../_lib/date";
+import {
+  getOverdueReferenceDate,
+  isDateAfterDeadline,
+  shouldWarnSomedayWithDeadline,
+} from "../../_lib/deadline";
 import { formatOverdueDaysAgo } from "../../_lib/overdue";
 import { sortDatedByDateAscThenCreatedDesc, sortMixedByDateAndCreated } from "../../_lib/task_sort";
 import { buildUpcomingSections, type UpcomingSection } from "../../_lib/upcoming_sections";
@@ -19,6 +24,7 @@ type Task = {
   title: string;
   note: string;
   date: string | null;
+  deadline: string | null;
   someday: boolean;
   completedAt: string | null;
   archivedAt: string | null;
@@ -31,6 +37,7 @@ type EditFields = {
   title: string;
   note: string;
   date: string;
+  deadline: string;
   someday: boolean;
   evening: boolean;
 };
@@ -74,6 +81,7 @@ export default function ViewPage() {
   const [areas, setAreas] = useState<AreaRef[]>([]);
   const [projects, setProjects] = useState<ProjectRef[]>([]);
   const [isEditScheduleOpen, setIsEditScheduleOpen] = useState(false);
+  const [scheduleMode, setScheduleMode] = useState<"date" | "deadline">("date");
   const [isClosing, setIsClosing] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
   const [isEditReady, setIsEditReady] = useState(false);
@@ -244,11 +252,13 @@ export default function ViewPage() {
     setIsOpening(true);
     setIsEditReady(false);
     setIsEditScheduleOpen(false);
+    setScheduleMode("date");
     setEditing({
       id: task.id,
       title: task.title ?? "",
       note: task.note ?? "",
       date: task.date ?? "",
+      deadline: task.deadline ?? "",
       someday: Boolean(task.someday),
       evening: Boolean(task.date === today && eveningMap[task.id]),
     });
@@ -268,6 +278,7 @@ export default function ViewPage() {
       title: editing.title,
       note: editing.note,
       date: editing.someday ? null : editing.date || null,
+      deadline: editing.someday ? null : editing.deadline || null,
       someday: editing.someday,
     };
     try {
@@ -311,6 +322,38 @@ export default function ViewPage() {
     setEditing(next);
   };
 
+  const handleScheduleChange = (next: Partial<Editing>) => {
+    if (!editing) return;
+    let candidate: Editing = { ...editing, ...next };
+
+    if (candidate.someday) {
+      if (shouldWarnSomedayWithDeadline(editing.deadline, true)) {
+        const proceed = window.confirm(
+          "This task has a deadline. Move to Someday and clear deadline?"
+        );
+        if (!proceed) {
+          setEditMessage("Someday化を中止しました。deadlineを維持する場合は日付設定を続けてください。");
+          return;
+        }
+      }
+      candidate = { ...candidate, date: "", deadline: "", someday: true, evening: false };
+    }
+
+    if (!candidate.someday && isDateAfterDeadline(candidate.date, candidate.deadline)) {
+      const clearDeadline = window.confirm(
+        "date is after deadline. OK to clear deadline and continue, Cancel to keep deadline and re-set."
+      );
+      if (!clearDeadline) {
+        setEditMessage("date と deadline の前後関係を見直してください。");
+        return;
+      }
+      candidate = { ...candidate, deadline: "" };
+    }
+
+    setEditMessage(null);
+    handleEditChange(candidate);
+  };
+
   const handleBlurSave = async () => {
     if (!isEditReady) return;
     await saveEdit();
@@ -318,6 +361,16 @@ export default function ViewPage() {
 
   const handleFocusTarget = (target: "title" | "note") => {
     lastFocusRef.current = target;
+  };
+
+  const toggleDateSchedulePanel = () => {
+    setScheduleMode("date");
+    setIsEditScheduleOpen((prev) => (scheduleMode === "date" ? !prev : true));
+  };
+
+  const toggleDeadlineSchedulePanel = () => {
+    setScheduleMode("deadline");
+    setIsEditScheduleOpen((prev) => (scheduleMode === "deadline" ? !prev : true));
   };
 
   useEffect(() => {
@@ -390,6 +443,7 @@ export default function ViewPage() {
       window.setTimeout(() => {
         setEditing(null);
         setIsEditScheduleOpen(false);
+        setScheduleMode("date");
         setIsClosing(false);
         setIsEditReady(false);
       }, 400);
@@ -400,6 +454,7 @@ export default function ViewPage() {
       window.setTimeout(() => {
         setEditing(null);
         setIsEditScheduleOpen(false);
+        setScheduleMode("date");
         setIsClosing(false);
         setIsEditReady(false);
       }, 400);
@@ -720,6 +775,7 @@ const handleTaskClick = async (task: Task) => {
                         isLocked={isLocked}
                         isLogbook={isLogbook}
                         today={today}
+                        scheduleMode={scheduleMode}
                         eveningMap={eveningMap}
                         isEditScheduleOpen={isEditScheduleOpen}
                         setIsEditScheduleOpen={setIsEditScheduleOpen}
@@ -735,6 +791,9 @@ const handleTaskClick = async (task: Task) => {
                         onBlurSave={handleBlurSave}
                         onEdit={startEdit}
                         onEditChange={handleEditChange}
+                        onScheduleChange={handleScheduleChange}
+                        onToggleDateSchedulePanel={toggleDateSchedulePanel}
+                        onToggleDeadlineSchedulePanel={toggleDeadlineSchedulePanel}
                         onToggleComplete={toggleComplete}
                         onDelete={handleDelete}
                         editMessage={editMessage}
@@ -750,6 +809,7 @@ const handleTaskClick = async (task: Task) => {
                         isLocked={isLocked}
                         isLogbook={isLogbook}
                         today={today}
+                        scheduleMode={scheduleMode}
                         eveningMap={eveningMap}
                         isEditScheduleOpen={isEditScheduleOpen}
                         setIsEditScheduleOpen={setIsEditScheduleOpen}
@@ -765,6 +825,9 @@ const handleTaskClick = async (task: Task) => {
                         onBlurSave={handleBlurSave}
                         onEdit={handleTaskClick}
                         onEditChange={handleEditChange}
+                        onScheduleChange={handleScheduleChange}
+                        onToggleDateSchedulePanel={toggleDateSchedulePanel}
+                        onToggleDeadlineSchedulePanel={toggleDeadlineSchedulePanel}
                         onToggleComplete={toggleComplete}
                         onDelete={handleDelete}
                         editMessage={editMessage}
@@ -799,6 +862,7 @@ const handleTaskClick = async (task: Task) => {
                           isLocked={isLocked}
                           isLogbook={isLogbook}
                           today={today}
+                          scheduleMode={scheduleMode}
                           eveningMap={eveningMap}
                           isEditScheduleOpen={isEditScheduleOpen}
                           setIsEditScheduleOpen={setIsEditScheduleOpen}
@@ -814,6 +878,9 @@ const handleTaskClick = async (task: Task) => {
                           onBlurSave={handleBlurSave}
                           onEdit={handleTaskClick}
                           onEditChange={handleEditChange}
+                          onScheduleChange={handleScheduleChange}
+                          onToggleDateSchedulePanel={toggleDateSchedulePanel}
+                          onToggleDeadlineSchedulePanel={toggleDeadlineSchedulePanel}
                           onToggleComplete={toggleComplete}
                           onDelete={handleDelete}
                           editMessage={editMessage}
@@ -838,6 +905,7 @@ const handleTaskClick = async (task: Task) => {
                         isLocked={isLocked}
                         isLogbook={isLogbook}
                         today={today}
+                        scheduleMode={scheduleMode}
                         eveningMap={eveningMap}
                         isEditScheduleOpen={isEditScheduleOpen}
                         setIsEditScheduleOpen={setIsEditScheduleOpen}
@@ -853,6 +921,9 @@ const handleTaskClick = async (task: Task) => {
                         onBlurSave={handleBlurSave}
                         onEdit={handleTaskClick}
                         onEditChange={handleEditChange}
+                        onScheduleChange={handleScheduleChange}
+                        onToggleDateSchedulePanel={toggleDateSchedulePanel}
+                        onToggleDeadlineSchedulePanel={toggleDeadlineSchedulePanel}
                         onToggleComplete={toggleComplete}
                         onDelete={handleDelete}
                         editMessage={editMessage}
@@ -869,6 +940,7 @@ const handleTaskClick = async (task: Task) => {
                   isLocked={isLocked}
                   isLogbook={isLogbook}
                   today={today}
+                  scheduleMode={scheduleMode}
                   eveningMap={eveningMap}
                   isEditScheduleOpen={isEditScheduleOpen}
                   setIsEditScheduleOpen={setIsEditScheduleOpen}
@@ -884,6 +956,9 @@ const handleTaskClick = async (task: Task) => {
                   onBlurSave={handleBlurSave}
                   onEdit={handleTaskClick}
                   onEditChange={handleEditChange}
+                  onScheduleChange={handleScheduleChange}
+                  onToggleDateSchedulePanel={toggleDateSchedulePanel}
+                  onToggleDeadlineSchedulePanel={toggleDeadlineSchedulePanel}
                   onToggleComplete={toggleComplete}
                   onDelete={handleDelete}
                   editMessage={editMessage}
@@ -932,7 +1007,8 @@ function splitOverdue(items: Task[], today: string) {
   let rest = 0;
   for (const item of items) {
     if (item.completedAt) continue;
-    if (item.date && item.date < today) {
+    const refDate = getOverdueReferenceDate(item.date, item.deadline);
+    if (refDate && refDate < today) {
       overdue += 1;
     } else {
       rest += 1;
@@ -947,6 +1023,7 @@ type TaskListProps = {
   isLocked: boolean;
   isLogbook: boolean;
   today: string;
+  scheduleMode: "date" | "deadline";
   eveningMap: Record<string, boolean>;
   isEditScheduleOpen: boolean;
   setIsEditScheduleOpen: (open: boolean) => void;
@@ -962,6 +1039,9 @@ type TaskListProps = {
   onBlurSave: () => void;
   onEdit: (task: Task) => void;
   onEditChange: (editing: Editing | null) => void;
+  onScheduleChange: (next: Partial<Editing>) => void;
+  onToggleDateSchedulePanel: () => void;
+  onToggleDeadlineSchedulePanel: () => void;
   onToggleComplete: (task: Task) => void;
   onDelete: (task: Task) => void;
   editMessage: string | null;
@@ -973,6 +1053,7 @@ function TaskList({
   isLocked,
   isLogbook,
   today,
+  scheduleMode,
   eveningMap,
   isEditScheduleOpen,
   setIsEditScheduleOpen,
@@ -988,6 +1069,9 @@ function TaskList({
   onBlurSave,
   onEdit,
   onEditChange,
+  onScheduleChange,
+  onToggleDateSchedulePanel,
+  onToggleDeadlineSchedulePanel,
   onToggleComplete,
   onDelete,
   editMessage,
@@ -1078,7 +1162,7 @@ function TaskList({
                         className="schedule-label-button"
                         onClick={(event) => {
                           event.stopPropagation();
-                          setIsEditScheduleOpen(!isEditScheduleOpen);
+                          onToggleDateSchedulePanel();
                         }}
                         onPointerDown={(event) => event.stopPropagation()}
                       >
@@ -1096,68 +1180,128 @@ function TaskList({
                           className="icon-button"
                           onClick={(event) => {
                             event.stopPropagation();
-                            setIsEditScheduleOpen(!isEditScheduleOpen);
+                            onToggleDateSchedulePanel();
                           }}
                           onPointerDown={(event) => event.stopPropagation()}
                         >
                           <i className="fa-solid fa-calendar icon-upcoming" aria-hidden />
                         </button>
                       )}
+                      <button
+                        className="icon-button"
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onToggleDeadlineSchedulePanel();
+                        }}
+                        onPointerDown={(event) => event.stopPropagation()}
+                        disabled={editing.someday}
+                      >
+                        <i className="fa-solid fa-flag icon-upcoming" aria-hidden />
+                      </button>
                       <button className="icon-button" type="button">
                         <i className="fa-solid fa-list-check" aria-hidden />
                       </button>
                     </div>
                   </div>
+                  {editing.deadline && !editing.someday ? (
+                    <div className="deadline-meta draft-offset">
+                      <span className="date-badge">
+                        <i className="fa-solid fa-flag icon-upcoming" aria-hidden />
+                        Deadline {editing.deadline}
+                      </span>
+                    </div>
+                  ) : null}
                   <div
                     className={`schedule-panel draft-offset ${isEditScheduleOpen ? "is-open" : ""}`}
                     onPointerDown={(event) => event.stopPropagation()}
                   >
-                    <button
-                      className="pill ghost"
-                      onClick={() => {
-                        onEditChange({ ...editing, date: today, someday: false, evening: false });
-                        setIsEditScheduleOpen(false);
-                      }}
-                    >
-                      Today
-                    </button>
-                    <button
-                      className="pill ghost"
-                      onClick={() => {
-                        onEditChange({ ...editing, date: today, someday: false, evening: true });
-                        setIsEditScheduleOpen(false);
-                      }}
-                    >
-                      <i className="fa-solid fa-moon" aria-hidden />
-                      This Evening
-                    </button>
-                    <InlineCalendar
-                      selectedDate={editing.someday ? "" : editing.date}
-                      today={today}
-                      onSelect={(date) => {
-                        onEditChange({ ...editing, date, someday: false, evening: false });
-                        setIsEditScheduleOpen(false);
-                      }}
-                    />
-                    <button
-                      className="pill ghost full-width"
-                      onClick={() => {
-                        onEditChange({ ...editing, date: "", someday: true, evening: false });
-                        setIsEditScheduleOpen(false);
-                      }}
-                    >
-                      <i className="fa-solid fa-archive icon-someday" aria-hidden />
-                      Someday
-                    </button>
-                    <button
-                      className="pill ghost clear-date"
-                      onClick={() => {
-                        onEditChange({ ...editing, date: "", someday: false, evening: false });
-                        setIsEditScheduleOpen(false);
-                      }}
-                    >
-                      Clear
-                    </button>
+                    {scheduleMode === "date" ? (
+                      <>
+                        <button
+                          className="pill ghost"
+                          onClick={() => {
+                            onScheduleChange({
+                              date: today,
+                              someday: false,
+                              evening: false,
+                            });
+                            setIsEditScheduleOpen(false);
+                          }}
+                        >
+                          Today
+                        </button>
+                        <button
+                          className="pill ghost"
+                          onClick={() => {
+                            onScheduleChange({
+                              date: today,
+                              someday: false,
+                              evening: true,
+                            });
+                            setIsEditScheduleOpen(false);
+                          }}
+                        >
+                          <i className="fa-solid fa-moon" aria-hidden />
+                          This Evening
+                        </button>
+                        <InlineCalendar
+                          selectedDate={editing.someday ? "" : editing.date}
+                          today={today}
+                          onSelect={(date) => {
+                            onScheduleChange({
+                              date,
+                              someday: false,
+                              evening: false,
+                            });
+                            setIsEditScheduleOpen(false);
+                          }}
+                        />
+                        <button
+                          className="pill ghost full-width"
+                          onClick={() => {
+                            onScheduleChange({ date: "", someday: true, evening: false });
+                            setIsEditScheduleOpen(false);
+                          }}
+                        >
+                          <i className="fa-solid fa-archive icon-someday" aria-hidden />
+                          Someday
+                        </button>
+                        <button
+                          className="pill ghost clear-date"
+                          onClick={() => {
+                            onScheduleChange({ date: "", someday: false, evening: false });
+                            setIsEditScheduleOpen(false);
+                          }}
+                        >
+                          Clear
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <InlineCalendar
+                          selectedDate={editing.deadline}
+                          today={today}
+                          onSelect={(deadline) => {
+                            onScheduleChange({
+                              deadline,
+                              someday: false,
+                              evening: false,
+                            });
+                            setIsEditScheduleOpen(false);
+                          }}
+                        />
+                        <button
+                          className="pill ghost clear-date"
+                          onClick={() => {
+                            onScheduleChange({ deadline: "" });
+                            setIsEditScheduleOpen(false);
+                          }}
+                        >
+                          Clear
+                        </button>
+                      </>
+                    )}
                   </div>
                   {editMessage && <span className="error">{editMessage}</span>}
                 </div>
@@ -1204,9 +1348,18 @@ function TaskList({
                 </div>
               </div>
               <div className="task-meta">
-                {item.date && isDateBefore(item.date, today) ? (
-                  <TaskDateBadge task={item} today={today} eveningMap={eveningMap} />
-                ) : null}
+                {(() => {
+                  const refDate = getOverdueReferenceDate(item.date, item.deadline);
+                  if (!refDate || !isDateBefore(refDate, today)) return null;
+                  return (
+                    <TaskDateBadge
+                      task={item}
+                      today={today}
+                      eveningMap={eveningMap}
+                      referenceDate={refDate}
+                    />
+                  );
+                })()}
                 <div className="row-actions" />
               </div>
             </div>
@@ -1230,7 +1383,13 @@ function TaskList({
   );
 }
 
-function getTaskDateLabel(task: Task, today: string, eveningMap: Record<string, boolean>) {
+function getTaskDateLabel(
+  task: Task,
+  today: string,
+  eveningMap: Record<string, boolean>,
+  referenceDate?: string
+) {
+  if (referenceDate) return referenceDate;
   if (task.someday) return "Someday";
   if (!task.date) return "";
   if (task.date === today) return eveningMap[task.id] ? "This Evening" : "Today";
@@ -1241,12 +1400,14 @@ function TaskDateBadge({
   task,
   today,
   eveningMap,
+  referenceDate,
 }: {
   task: Task;
   today: string;
   eveningMap: Record<string, boolean>;
+  referenceDate?: string;
 }) {
-  const label = getTaskDateLabel(task, today, eveningMap);
+  const label = getTaskDateLabel(task, today, eveningMap, referenceDate);
   if (!label) return null;
   return <DateBadge label={label} today={today} />;
 }
