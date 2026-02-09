@@ -81,6 +81,7 @@
 
 ## フロントエンドの実装仕様
 - ダッシュボードは Today/Inbox の件数と Area を表示。
+- ダッシュボードの Today/Inbox detail（`Overdue x / ...`）は超過基準日（`deadline ?? date`）で集計する。
 - 各ビューは `/api/{view}` を取得して表示。
 - `app/(views)/[view]/page.tsx` の各カテゴリ画面では、`PageMidHeader` 直下に「現在の view に対応する単一の `CategoryCard`」を表示する。
 - 上記 `CategoryCard` は `PageMidHeader` の直下でスクロール追従（sticky）し、Today/Inbox の場合はダッシュボード同様の detail（Overdue/Today, Overdue/Others）を表示する。
@@ -96,7 +97,7 @@
 - `app/(views)/[view]/page.tsx` は `today/anytime/someday` のメタ情報（`areas/projects`）を token 単位でキャッシュし、View 間遷移時の重複取得を抑制する（`Refresh` は強制再取得）。
 - クライアントの API 呼び出しは `useClientAuth` が返す `authedFetch`（内部で `useAuthedFetch` / `fetchWithAutoRefresh` を利用）を通し、`401` 受信時は `refreshToken` で 1 回だけ再発行後に再試行する。
 
-根拠: `app/page.tsx`, `app/(views)/[view]/page.tsx`, `app/areas/[areaId]/page.tsx`, `app/projects/[projectId]/page.tsx`, `app/_components/AccessSettingsFooter.tsx`, `app/_components/CategoryCard.tsx`, `app/_components/PageHero.tsx`, `app/_components/PageMidHeader.tsx`, `app/_hooks/useClientAuth.ts`, `app/_hooks/useStoredState.ts`, `app/_lib/date.ts`, `app/globals.css`
+根拠: `app/page.tsx`, `app/(views)/[view]/page.tsx`, `app/areas/[areaId]/page.tsx`, `app/projects/[projectId]/page.tsx`, `app/_components/AccessSettingsFooter.tsx`, `app/_components/CategoryCard.tsx`, `app/_components/PageHero.tsx`, `app/_components/PageMidHeader.tsx`, `app/_hooks/useClientAuth.ts`, `app/_hooks/useStoredState.ts`, `app/_lib/date.ts`, `app/_lib/deadline.ts`, `app/globals.css`
 
 ## Task 編集 UI のフォーカス挙動
 - タスク編集時は最後にタップした入力（Title / Note）を `lastFocusRef` で記録し、編集有効化時に該当の入力へフォーカスを移す。

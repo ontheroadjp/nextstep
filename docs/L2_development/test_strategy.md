@@ -45,7 +45,7 @@
 - View Upcoming の期間区切りルール（明日〜7日 / 月内レンジ / 3ヶ月月単位 / 4ヶ月目以降年単位）
 - deadline 警告フローと超過判定基準（`deadline ?? date`）のルール
 
-根拠: `tests/api/*.test.ts`, `tests/integration/*.test.ts`, `tests/task_edit_focus_behavior.test.ts`, `tests/someday_grouping_sort_rule.test.ts`, `tests/upcoming_sectioning.test.ts`, `tests/deadline_warning_flow.test.ts`, `tests/api/auth_refresh_route.test.ts`, `docs/L1/05_testing.md`
+根拠: `tests/api/*.test.ts`, `tests/integration/*.test.ts`, `tests/task_edit_focus_behavior.test.ts`, `tests/someday_grouping_sort_rule.test.ts`, `tests/upcoming_sectioning.test.ts`, `tests/deadline_warning_flow.test.ts`, `tests/home_overdue_rule.test.ts`, `tests/api/auth_refresh_route.test.ts`, `docs/L1/05_testing.md`
 
 ## 未確認事項
 - E2E テスト（Playwright/Cypress 等）の導入有無
