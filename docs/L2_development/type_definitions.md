@@ -7,6 +7,7 @@
 - `title: string`
 - `note: string`
 - `date: string | null`
+- `deadline: string | null`
 - `someday: boolean`
 - `completedAt: string | null`
 - `archivedAt: string | null`
@@ -32,6 +33,7 @@
 - `title?: string`
 - `note?: string`
 - `date?: string | null`
+- `deadline?: string | null`
 - `someday?: boolean`
 - `areaId?: string | null`
 - `projectId?: string | null`
@@ -42,6 +44,7 @@
 - `title?: string`
 - `note?: string`
 - `date?: string | null`
+- `deadline?: string | null`
 - `someday?: boolean`
 - `completedAt?: string | null`
 - `archivedAt?: string | null`

@@ -18,11 +18,12 @@
 - `projects.name`: 必須、空白不可
 - `projects.note`: 必須、空白不可
 - `tasks.title`: 必須、空白不可
-- `tasks.someday` と `tasks.date` は排他（`someday = true` の場合 `date is null`）
+- `tasks.deadline`: 任意（nullable date）
+- `tasks.someday = true` の場合 `tasks.date is null` かつ `tasks.deadline is null`
 - `tasks.archived_at` がある場合 `completed_at` 必須
 - `sort_key` は任意だが空白不可
 
-根拠: `db/migrations/0001_init.sql`, `db/maintenance/0002_apply_sort_key_constraints.sql`, `db/maintenance/0003_archive_flow.sql`
+根拠: `db/migrations/0001_init.sql`, `db/maintenance/0002_apply_sort_key_constraints.sql`, `db/maintenance/0003_archive_flow.sql`, `db/maintenance/0004_add_task_deadline.sql`
 
 ## RLS（Row Level Security）
 - `areas/projects/tasks` は `user_id = auth.uid()` のみアクセス可能
@@ -44,6 +45,7 @@
   1. `db/migrations/0001_init.sql`
   2. `db/maintenance/0002_apply_sort_key_constraints.sql`
   3. `db/maintenance/0003_archive_flow.sql`
+  4. `db/maintenance/0004_add_task_deadline.sql`
 - 実行コマンド:
   - Dry-run: `npm run db:migrate:dry`
   - Apply: `npm run db:migrate`

@@ -5,7 +5,7 @@ import {
   getProjectAreaId,
   mapTask,
   nonEmptyString,
-  normalizeSomedayDate,
+  normalizeTaskSchedule,
   readJson,
   requireUserContext,
 } from "../_helpers";
@@ -14,6 +14,7 @@ type TaskCreateInput = {
   title?: string;
   note?: string;
   date?: string | null;
+  deadline?: string | null;
   someday?: boolean;
   areaId?: string | null;
   projectId?: string | null;
@@ -38,6 +39,9 @@ async function _POST(request: Request): Promise<Response> {
   if (body.note !== undefined && typeof body.note !== "string") {
     return error("bad_request", "note must be string", 400);
   }
+  if (body.deadline !== undefined && body.deadline !== null && typeof body.deadline !== "string") {
+    return error("bad_request", "deadline must be string or null", 400);
+  }
   if (body.areaId !== undefined && body.areaId !== null && !nonEmptyString(body.areaId)) {
     return error("bad_request", "areaId must be non-empty", 400);
   }
@@ -45,7 +49,15 @@ async function _POST(request: Request): Promise<Response> {
     return error("bad_request", "projectId must be non-empty", 400);
   }
 
-  const normalized = normalizeSomedayDate({ date: body.date, someday: body.someday });
+  if (body.someday === true && body.deadline != null) {
+    return error("bad_request", "deadline is not allowed when someday is true", 400);
+  }
+
+  const normalized = normalizeTaskSchedule({
+    date: body.date,
+    deadline: body.deadline,
+    someday: body.someday,
+  });
 
   if (body.areaId) {
     const areaCheck = await ensureOwnedReference(supabase, userId, "areas", body.areaId, "areaId");
@@ -78,12 +90,13 @@ async function _POST(request: Request): Promise<Response> {
       title,
       note: body.note?.trim() ?? "",
       date: normalized.date ?? null,
+      deadline: normalized.deadline ?? null,
       someday: normalized.someday ?? false,
       area_id: resolvedAreaId,
       project_id: body.projectId ?? null,
     })
     .select(
-      "id,title,note,date,someday,completed_at,archived_at,created_at,area_id,project_id,sort_key,checklists(id,title,completed,sort_key)"
+      "id,title,note,date,deadline,someday,completed_at,archived_at,created_at,area_id,project_id,sort_key,checklists(id,title,completed,sort_key)"
     )
     .single();
 

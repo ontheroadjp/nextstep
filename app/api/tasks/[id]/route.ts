@@ -5,7 +5,7 @@ import {
   getProjectAreaId,
   mapTask,
   nonEmptyString,
-  normalizeSomedayDate,
+  normalizeTaskSchedule,
   readJson,
   requireUserContext,
 } from "../../_helpers";
@@ -14,6 +14,7 @@ type TaskUpdateInput = {
   title?: string;
   note?: string;
   date?: string | null;
+  deadline?: string | null;
   someday?: boolean;
   completedAt?: string | null;
   archivedAt?: string | null;
@@ -46,6 +47,9 @@ async function _PATCH(
   if (body.note !== undefined && typeof body.note !== "string") {
     return error("bad_request", "note must be string", 400);
   }
+  if (body.deadline !== undefined && body.deadline !== null && typeof body.deadline !== "string") {
+    return error("bad_request", "deadline must be string or null", 400);
+  }
   if (body.areaId !== undefined && body.areaId !== null && !nonEmptyString(body.areaId)) {
     return error("bad_request", "areaId must be non-empty", 400);
   }
@@ -56,7 +60,15 @@ async function _PATCH(
     return error("bad_request", "sortKey must be non-empty", 400);
   }
 
-  const normalized = normalizeSomedayDate({ date: body.date, someday: body.someday });
+  if (body.someday === true && body.deadline != null) {
+    return error("bad_request", "deadline is not allowed when someday is true", 400);
+  }
+
+  const normalized = normalizeTaskSchedule({
+    date: body.date,
+    deadline: body.deadline,
+    someday: body.someday,
+  });
 
   if (body.areaId) {
     const areaCheck = await ensureOwnedReference(supabase, userId, "areas", body.areaId, "areaId");
@@ -85,6 +97,7 @@ async function _PATCH(
   if (body.title !== undefined) update.title = body.title.trim();
   if (body.note !== undefined) update.note = body.note.trim();
   if (normalized.date !== undefined) update.date = normalized.date;
+  if (normalized.deadline !== undefined) update.deadline = normalized.deadline;
   if (normalized.someday !== undefined) update.someday = normalized.someday;
   if (body.completedAt !== undefined) update.completed_at = body.completedAt;
   if (body.archivedAt !== undefined) update.archived_at = body.archivedAt;
@@ -102,7 +115,7 @@ async function _PATCH(
     .eq("id", params.id)
     .eq("user_id", userId)
     .select(
-      "id,title,note,date,someday,completed_at,archived_at,area_id,project_id,sort_key,checklists(id,title,completed,sort_key)"
+      "id,title,note,date,deadline,someday,completed_at,archived_at,area_id,project_id,sort_key,checklists(id,title,completed,sort_key)"
     )
     .single();
 

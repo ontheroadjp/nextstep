@@ -29,6 +29,7 @@ vi.mock("../../app/api/_supabase", () => ({
                       title: "Task",
                       note: "Note",
                       date: null,
+                      deadline: null,
                       someday: false,
                       completed_at: null,
                       area_id: null,
@@ -121,6 +122,16 @@ describe("Tasks PATCH/DELETE", () => {
     const res = await tasksPATCH(req, { params: Promise.resolve({ id: "t1" }) });
     expect(res.status).toBe(400);
     projectAreaId = null;
+  });
+
+  it("PATCH rejects deadline when someday=true", async () => {
+    const req = new Request("http://localhost", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ someday: true, deadline: "2026-02-01" }),
+    });
+    const res = await tasksPATCH(req, { params: Promise.resolve({ id: "t1" }) });
+    expect(res.status).toBe(400);
   });
 
   it("PATCH updates item", async () => {

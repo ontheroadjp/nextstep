@@ -13,6 +13,7 @@ export type Task = {
   title: string;
   note: string;
   date: string | null;
+  deadline: string | null;
   someday: boolean;
   completedAt: string | null;
   archivedAt: string | null;
@@ -48,6 +49,7 @@ export function mapTask(row: unknown): Task {
     title: String(item.title ?? ""),
     note: String(item.note ?? ""),
     date: (item.date as string | null) ?? null,
+    deadline: (item.deadline as string | null) ?? null,
     someday: Boolean(item.someday),
     completedAt: (item.completed_at as string | null) ?? null,
     archivedAt: (item.archived_at as string | null) ?? null,
@@ -121,18 +123,19 @@ export function nonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-export function normalizeSomedayDate(input: {
+export function normalizeTaskSchedule(input: {
   date?: string | null;
+  deadline?: string | null;
   someday?: boolean;
-}): { date?: string | null; someday?: boolean } {
-  const { date, someday } = input;
+}): { date?: string | null; deadline?: string | null; someday?: boolean } {
+  const { date, deadline, someday } = input;
   if (someday === true) {
-    return { date: null, someday: true };
+    return { date: null, deadline: null, someday: true };
   }
   if (date != null) {
-    return { date, someday: false };
+    return { date, deadline, someday: false };
   }
-  return { date, someday };
+  return { date, deadline, someday };
 }
 
 export async function ensureOwnedReference(

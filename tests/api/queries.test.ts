@@ -85,6 +85,10 @@ describe("_queries", () => {
       projectId: "p1",
     });
 
+    const selectCall = calls.find((call) => call.method === "select");
+    expect(typeof selectCall?.args[0]).toBe("string");
+    expect(String(selectCall?.args[0])).toContain("deadline");
+
     expect(calls).toContainEqual({ method: "from", args: ["tasks"] });
     expect(calls).toContainEqual({ method: "eq", args: ["user_id", "u1"] });
     expect(calls).toContainEqual({ method: "is", args: ["archived_at", null] });
