@@ -42,11 +42,14 @@
 ## Task 作成・更新
 - `title` は必須、`note` は任意。
 - 新規作成時のデフォルトタイトルは「新規タスク」。
-- `someday = true` の場合 `date = null` に正規化。
+- `deadline` は任意（nullable date）。
+- 新規作成時は `date` が設定されても `deadline` は自動設定しない。
+- `someday = true` の場合 `date = null` かつ `deadline = null` に正規化。
 - `date` が設定された場合 `someday = false` に正規化。
 - `areaId` / `projectId` は所有チェックを行う。
 - `projectId` がある場合、`areaId` は Project の `area_id` と一致する必要がある。
 - `projectId` に紐づく `area_id` があり、`areaId` 未指定の場合は補完される。
+- `someday = true` と `deadline` の同時指定は API で拒否される。
 
 根拠: `app/api/tasks/route.ts`, `app/api/tasks/[id]/route.ts`, `app/api/_helpers.ts`
 
@@ -68,13 +71,13 @@
 根拠: `app/api/projects/route.ts`, `app/api/areas/route.ts`, `app/api/checklists/[id]/route.ts`, `app/api/tasks/[id]/checklists/route.ts`
 
 ## データ制約（DB）
-- `tasks.someday = true` の場合 `tasks.date is null`
+- `tasks.someday = true` の場合 `tasks.date is null` かつ `tasks.deadline is null`
 - `tasks.archived_at is not null` の場合 `completed_at is not null`
 - `projects.note` は必須
 - 主要テーブルは `user_id` と RLS による制御
 - DB 運用は `db_migrate.sh`（固定順適用）、`db_backup.sh`（SQLバックアップ）、`db_rollback.sh`（SQLリストア）を利用する
 
-根拠: `db/migrations/0001_init.sql`, `db/maintenance/0003_archive_flow.sql`, `scripts/db_migrate.sh`, `scripts/db_backup.sh`, `scripts/db_rollback.sh`
+根拠: `db/migrations/0001_init.sql`, `db/maintenance/0003_archive_flow.sql`, `db/maintenance/0004_add_task_deadline.sql`, `scripts/db_migrate.sh`, `scripts/db_backup.sh`, `scripts/db_rollback.sh`
 
 ## フロントエンドの実装仕様
 - ダッシュボードは Today/Inbox の件数と Area を表示。
