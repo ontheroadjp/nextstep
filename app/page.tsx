@@ -6,12 +6,14 @@ import { CategoryCard } from "./_components/CategoryCard";
 import { PageHero } from "./_components/PageHero";
 import { useClientAuth } from "./_hooks/useClientAuth";
 import { getTodayString } from "./_lib/date";
+import { getOverdueReferenceDate } from "./_lib/deadline";
 
 type Task = {
   id: string;
   title: string;
   note: string;
   date: string | null;
+  deadline: string | null;
   someday: boolean;
   completedAt: string | null;
   archivedAt: string | null;
@@ -37,7 +39,8 @@ function splitOverdue(items: Task[], today: string) {
   let rest = 0;
   for (const item of items) {
     if (item.completedAt) continue;
-    if (item.date && item.date < today) {
+    const refDate = getOverdueReferenceDate(item.date, item.deadline);
+    if (refDate && refDate < today) {
       overdue += 1;
     } else {
       rest += 1;
