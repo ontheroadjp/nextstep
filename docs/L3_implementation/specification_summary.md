@@ -58,9 +58,9 @@
 - Logbook: 完了日（`archived_at`）降順（変更なし）
 - Today: Project/Area/No Group の順で表示し、その後に This Evening を表示
 - Inbox/Anytime/Someday/Area/Project: 日付なし → 日付ありの順で並べ、日付なしは `created_at` 降順、日付ありは `date` 昇順 + `created_at` 降順
-- Today/Area/Project の一覧行では、`date < today` のタスクを右端メタ領域に `fa-flag` + `Nd ago`（紫）で表示する
+- Today/Area/Project の一覧行では、超過基準日（`deadline ?? date`）が `today` より過去のタスクを右端メタ領域に `fa-flag` + `Nd ago`（紫）で表示する
 
-根拠: `app/(views)/[view]/page.tsx`, `app/areas/[areaId]/page.tsx`, `app/projects/[projectId]/page.tsx`, `app/_lib/overdue.ts`
+根拠: `app/(views)/[view]/page.tsx`, `app/areas/[areaId]/page.tsx`, `app/projects/[projectId]/page.tsx`, `app/_lib/deadline.ts`
 
 ## Project / Area / Checklist
 - Project: `name` / `note` 必須。
@@ -104,6 +104,11 @@
 - タイトル入力は `input.title-input`、ノート入力は `textarea.note-input` を使用し、入力スタイルは要素種別込みのセレクタで定義する。
 - `app/(views)/[view]/page.tsx` の編集フォーカス時は全選択を行わず、キャレット表示で入力開始する。
 - `app/(views)/[view]/page.tsx` の Someday 画面は Today と同じ `Project / Area / No Group` 分類で表示し、各グループ内の並びも `sortMixedByDateAndCreated` に統一する。
+- タスクカードのスケジュール操作は 2 つに分離する。
+- カレンダーアイコン: 実行日（date）を編集（Today/This Evening/Someday/Calendar/Clear）。
+- フラグアイコン: 締切（deadline）を編集（Calendar/Clear のみ）。
+- `date > deadline` となる変更、および deadline 設定済みタスクの Someday 変更は確認ダイアログを表示し、同意時は deadline をクリアして保存する。
+- deadline 設定済みタスクはスケジュール表示の下に `Deadline YYYY-MM-DD` を表示する。
 
 根拠: `app/(views)/[view]/page.tsx`, `app/globals.css`
 

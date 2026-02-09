@@ -718,6 +718,10 @@ textarea.note-input {
   grid-column: 1 / -1;
 }
 
+.deadline-meta {
+  margin-top: 4px;
+}
+
 .schedule-panel .pill.clear-date {
   grid-column: 1 / -1;
   background: #f3d6d1;
