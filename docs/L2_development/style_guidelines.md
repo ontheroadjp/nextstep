@@ -35,7 +35,7 @@
   - 明日: `Tomorrow`
   - 今日から2〜5日後: 曜日（例: `Mon`）
   - 6日後以降: `m/d(曜日)`（ゼロ埋めなし）
-  - 過去日付: `Nd ago` + `fa-flag`、文字色は紫（`.date-overdue`）
+  - 過去日付: 超過基準日（`deadline ?? date`）が `today` 未満の場合に `Nd ago` + `fa-flag`、文字色は紫（`.date-overdue`）
 
 根拠: `app/page.tsx`, `app/(views)/[view]/page.tsx`, `app/areas/[areaId]/page.tsx`, `app/projects/[projectId]/page.tsx`, `app/globals.css`
 
@@ -112,9 +112,12 @@
 - 追加/操作: `.fab-add`, `.logbook-stack-button`, `.icon-button`, `.pill`, `.toolbar`
 - 中間ヘッダー: `.page-mid-header`（固定表示）, `.page-mid-header-link`（トップページリンク）
 - 日付/スケジュール: `.schedule`, `.schedule-label-button`, `.date-badge`
+- 日付/スケジュール: カレンダーアイコン（実行日編集）とフラグアイコン（deadline 編集）を横並びで表示する
 - カレンダー: `.calendar`, `.calendar-header`, `.calendar-grid`
+- deadline パネル: Today/This Evening/Someday ボタンは表示しない（Calendar/Clear のみ）
 - カレンダー: 今日セルは `Today` アイコンのみ表示（テキストなし）、過去日は非表示
 - ボタン: `Today / This Evening / Someday` は高さ 1.8 倍、`Someday` は全幅、`Clear` は赤系
+- deadline 表示: 日付表示の下に `.deadline-meta` で `Deadline YYYY-MM-DD` を表示
 
 根拠: `app/(views)/[view]/page.tsx`, `app/globals.css`
 
@@ -125,7 +128,10 @@
 - 追加/操作: `.fab-add`, `.logbook-stack-button`, `.icon-button`, `.pill`, `.toolbar`
 - 中間ヘッダー: `.page-mid-header`（固定表示）, `.page-mid-header-link`（トップページリンク）
 - 日付/スケジュール: `.schedule`, `.schedule-label-button`, `.date-badge`
+- 日付/スケジュール: カレンダーアイコン（実行日編集）とフラグアイコン（deadline 編集）を横並びで表示する
 - カレンダー: `.calendar`, `.calendar-header`, `.calendar-grid`
+- deadline パネル: Today/This Evening/Someday ボタンは表示しない（Calendar/Clear のみ）
+- deadline 表示: 日付表示の下に `.deadline-meta` で `Deadline YYYY-MM-DD` を表示
 
 根拠: `app/areas/[areaId]/page.tsx`, `app/globals.css`
 
@@ -136,7 +142,10 @@
 - 追加/操作: `.fab-add`, `.logbook-stack-button`, `.icon-button`, `.pill`, `.toolbar`
 - 中間ヘッダー: `.page-mid-header`（固定表示）, `.page-mid-header-link`（トップページリンク）
 - 日付/スケジュール: `.schedule`, `.schedule-label-button`, `.date-badge`
+- 日付/スケジュール: カレンダーアイコン（実行日編集）とフラグアイコン（deadline 編集）を横並びで表示する
 - カレンダー: `.calendar`, `.calendar-header`, `.calendar-grid`
+- deadline パネル: Today/This Evening/Someday ボタンは表示しない（Calendar/Clear のみ）
+- deadline 表示: 日付表示の下に `.deadline-meta` で `Deadline YYYY-MM-DD` を表示
 
 根拠: `app/projects/[projectId]/page.tsx`, `app/globals.css`
 
