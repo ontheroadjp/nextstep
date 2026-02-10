@@ -12,36 +12,67 @@ vi.mock("../../app/api/_helpers", async () => {
 
 vi.mock("../../app/api/_supabase", () => ({
   createServerClient: () => ({
-    from: () => ({
-      insert: () => ({
-        select: () => ({
-          single: async () => ({
-            data: { id: "c1", title: "Check", completed: false, sort_key: null },
-            error: null,
-          }),
+    from: () => {
+      let orderCount = 0;
+      const query = {
+        eq: () => query,
+        order: () => {
+          orderCount += 1;
+          if (orderCount >= 2) {
+            return Promise.resolve({
+              data: [{ id: "c1", title: "Check", completed: false, sort_key: null }],
+              error: null,
+            });
+          }
+          return query;
+        },
+        select: () => query,
+        single: async () => ({
+          data: { id: "c1", title: "Check", completed: true, sort_key: null },
+          error: null,
         }),
-      }),
-      update: () => ({
-        eq: () => ({
+      };
+      return {
+        insert: () => ({
           select: () => ({
             single: async () => ({
-              data: { id: "c1", title: "Check", completed: true, sort_key: null },
+              data: { id: "c1", title: "Check", completed: false, sort_key: null },
               error: null,
             }),
           }),
         }),
-      }),
-      delete: () => ({
-        eq: async () => ({ error: null }),
-      }),
-    }),
+        update: () => ({
+          eq: () => ({
+            select: () => ({
+              single: async () => ({
+                data: { id: "c1", title: "Check", completed: true, sort_key: null },
+                error: null,
+              }),
+            }),
+          }),
+        }),
+        delete: () => ({
+          eq: async () => ({ error: null }),
+        }),
+        select: () => query,
+      };
+    },
   }),
 }));
 
-import { POST as checklistPOST } from "../../app/api/tasks/[id]/checklists/route";
+import { GET as checklistGET, POST as checklistPOST } from "../../app/api/tasks/[id]/checklists/route";
 import { PATCH as checklistPATCH, DELETE as checklistDELETE } from "../../app/api/checklists/[id]/route";
 
 describe("Checklists CRUD", () => {
+  it("GET /api/tasks/:id/checklists returns items", async () => {
+    const res = await checklistGET(new Request("http://localhost"), {
+      params: Promise.resolve({ id: "t1" }),
+    });
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.items).toHaveLength(1);
+  });
+
   it("POST /api/tasks/:id/checklists validates title", async () => {
     const req = new Request("http://localhost", {
       method: "POST",

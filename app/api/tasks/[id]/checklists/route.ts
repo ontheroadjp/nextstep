@@ -8,6 +8,29 @@ type ChecklistCreateInput = {
   sortKey?: string | null;
 };
 
+async function _GET(
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+): Promise<Response> {
+  const admin = createServerClient();
+  const auth = await requireUserContext(admin, request);
+  if (auth instanceof Response) return auth;
+  const { accessToken } = auth;
+  const supabase = createServerClient(accessToken);
+  const params = await context.params;
+
+  const { data, error: fetchError } = await supabase
+    .from("checklists")
+    .select("id,title,completed,sort_key")
+    .eq("task_id", params.id)
+    .order("sort_key", { ascending: true, nullsFirst: false })
+    .order("created_at", { ascending: true });
+
+  if (fetchError) return error("internal_error", fetchError.message, 500);
+
+  return json({ items: data ?? [] });
+}
+
 async function _POST(
   request: Request,
   context: { params: Promise<{ id: string }> }
@@ -47,3 +70,4 @@ async function _POST(
 }
 
 export const POST = withApiMonitoring(_POST);
+export const GET = withApiMonitoring(_GET);
