@@ -8,6 +8,8 @@ function read(path: string) {
 describe("shared auth context usage", () => {
   const targets = [
     "../app/page.tsx",
+    "../app/top/page.tsx",
+    "../app/login/page.tsx",
     "../app/(views)/[view]/page.tsx",
     "../app/areas/[areaId]/page.tsx",
     "../app/projects/[projectId]/page.tsx",
