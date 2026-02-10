@@ -647,7 +647,7 @@ const handleTaskClick = async (task: Task) => {
           <div className="panel">
             <h1>Not Found</h1>
             <p className="muted">このカテゴリは存在しません。</p>
-            <Link className="pill-link" href="/">
+            <Link className="pill-link" href="/top">
               Back
             </Link>
           </div>

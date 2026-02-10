@@ -20,14 +20,16 @@
 根拠: `app/`, `app/_components/`, `app/_hooks/`, `app/_lib/`, `db/`, `docs/`, `tests/`
 
 ## フロントエンド
-- `app/page.tsx`: ダッシュボード（Today/Inbox/Areas の件数やリンク）
+- `app/page.tsx`: 公開トップ（ログイン導線）
+- `app/top/page.tsx`: ダッシュボード（Today/Inbox/Areas の件数やリンク）
+- `app/login/page.tsx`: ログインページ
 - `app/(views)/[view]/page.tsx`: Today/Upcoming/Anytime/Someday/Logbook/Inbox の一覧画面
 - `app/areas/[areaId]/page.tsx`, `app/projects/[projectId]/page.tsx`: Area/Project の詳細画面
 - 共通 UI は `app/_components/`（`CategoryCard`, `PageHero`, `PageMidHeader`, `AccessSettingsFooter`）に集約
 - 共通状態 Hook は `app/_hooks/useStoredState.ts`、トークン状態と TZ ヘッダ生成は `app/_hooks/useClientAuth.ts` に集約
 - 日付系ユーティリティは `app/_lib/date.ts` に集約
 
-根拠: `app/page.tsx`, `app/(views)/[view]/page.tsx`, `app/areas/[areaId]/page.tsx`, `app/projects/[projectId]/page.tsx`, `app/_components/AccessSettingsFooter.tsx`, `app/_components/CategoryCard.tsx`, `app/_components/PageHero.tsx`, `app/_components/PageMidHeader.tsx`, `app/_hooks/useClientAuth.ts`, `app/_hooks/useStoredState.ts`, `app/_lib/date.ts`
+根拠: `app/page.tsx`, `app/top/page.tsx`, `app/login/page.tsx`, `app/(views)/[view]/page.tsx`, `app/areas/[areaId]/page.tsx`, `app/projects/[projectId]/page.tsx`, `app/_components/AccessSettingsFooter.tsx`, `app/_components/CategoryCard.tsx`, `app/_components/PageHero.tsx`, `app/_components/PageMidHeader.tsx`, `app/_hooks/useClientAuth.ts`, `app/_hooks/useStoredState.ts`, `app/_lib/date.ts`
 
 ## バックエンド（API）
 - 認証: `Authorization: Bearer <token>` または `x-access-token` を受け取り、Supabase Auth で検証。

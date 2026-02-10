@@ -1,11 +1,16 @@
 import { describe, expect, it } from "vitest";
 import HomePage from "../../app/page";
+import LoginPage from "../../app/login/page";
 import { nonEmptyString } from "../../app/api/_helpers";
 import { error } from "../../app/api/_utils";
 
 describe("smoke: entrypoints", () => {
   it("app page exports a component", () => {
     expect(typeof HomePage).toBe("function");
+  });
+
+  it("login page exports a component", () => {
+    expect(typeof LoginPage).toBe("function");
   });
 
   it("api helpers export functions", () => {
