@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { AccessSettingsFooter } from "../../_components/AccessSettingsFooter";
@@ -99,6 +99,9 @@ export default function ViewPage() {
   const savingEditRef = useRef(false);
   const editTouchedRef = useRef(false);
   const suppressClickRef = useRef(false);
+  const editingRef = useRef<Editing | null>(null);
+  const queuedEditRef = useRef<Editing | null>(null);
+  const debounceSaveTimerRef = useRef<number | null>(null);
 
   const accessReady = accessToken.trim().length > 0;
   const canFetch = accessReady && ALLOWED_VIEWS.has(view);
@@ -237,7 +240,6 @@ export default function ViewPage() {
         return exists ? prev : { ...prev, items: [item, ...prev.items] };
       });
       startEdit(item);
-      fetchView({ silent: true });
     } catch (err) {
       setCreateMessage(err instanceof Error ? err.message : "Failed to create");
     } finally {
@@ -265,25 +267,39 @@ export default function ViewPage() {
     setEditMessage(null);
   };
 
-  const saveEdit = async (): Promise<boolean> => {
-    if (!editing || savingEditRef.current || !accessToken.trim()) return false;
-    if (!editTouchedRef.current) return false;
-    if (!editing.title.trim()) {
+  const sameEditing = (a: Editing, b: Editing) =>
+    a.id === b.id &&
+    a.title === b.title &&
+    a.note === b.note &&
+    a.date === b.date &&
+    a.deadline === b.deadline &&
+    a.someday === b.someday &&
+    a.evening === b.evening;
+
+  const saveEdit = async (candidate?: Editing): Promise<boolean> => {
+    const target = candidate ?? editingRef.current;
+    if (!target || !accessToken.trim()) return false;
+    if (!candidate && !editTouchedRef.current) return false;
+    if (savingEditRef.current) {
+      queuedEditRef.current = target;
+      return false;
+    }
+    if (!target.title.trim()) {
       setEditMessage("タイトルを入力してください");
       return false;
     }
     savingEditRef.current = true;
     setEditMessage(null);
     const payload: Record<string, unknown> = {
-      title: editing.title,
-      note: editing.note,
-      date: editing.someday ? null : editing.date || null,
-      deadline: editing.someday ? null : editing.deadline || null,
-      someday: editing.someday,
+      title: target.title,
+      note: target.note,
+      date: target.someday ? null : target.date || null,
+      deadline: target.someday ? null : target.deadline || null,
+      someday: target.someday,
     };
     try {
       const res = await authedFetch(
-        `/api/tasks/${editing.id}`,
+        `/api/tasks/${target.id}`,
         {
           method: "PATCH",
           headers,
@@ -296,19 +312,38 @@ export default function ViewPage() {
         savingEditRef.current = false;
         return false;
       }
+      const updated = json?.item as Task | undefined;
       setEveningMap((prev) => {
         const next = { ...prev };
-        if (editing.evening && editing.date === today && !editing.someday) {
-          next[editing.id] = true;
+        if (target.evening && target.date === today && !target.someday) {
+          next[target.id] = true;
         } else {
-          delete next[editing.id];
+          delete next[target.id];
         }
         return next;
       });
-      editTouchedRef.current = false;
+      if (updated?.id) {
+        setState((prev) => {
+          if (prev.status !== "ready") return prev;
+          return {
+            ...prev,
+            items: prev.items.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)),
+          };
+        });
+      }
+      const latest = editingRef.current;
+      if (!latest || sameEditing(target, latest)) {
+        editTouchedRef.current = false;
+      } else {
+        queuedEditRef.current = latest;
+      }
       savingEditRef.current = false;
       setIsEditScheduleOpen(false);
-      fetchView({ silent: true });
+      const queued = queuedEditRef.current;
+      queuedEditRef.current = null;
+      if (queued && (!latest || !sameEditing(queued, latest) || editTouchedRef.current)) {
+        void saveEdit(queued);
+      }
       return true;
     } catch (err) {
       savingEditRef.current = false;
@@ -354,14 +389,31 @@ export default function ViewPage() {
     handleEditChange(candidate);
   };
 
-  const handleBlurSave = async () => {
-    if (!isEditReady) return;
-    await saveEdit();
-  };
-
   const handleFocusTarget = (target: "title" | "note") => {
     lastFocusRef.current = target;
   };
+
+  useEffect(() => {
+    editingRef.current = editing;
+  }, [editing]);
+
+  useEffect(() => {
+    if (!editing || !isEditReady || !editTouchedRef.current) return;
+    if (debounceSaveTimerRef.current) {
+      window.clearTimeout(debounceSaveTimerRef.current);
+    }
+    debounceSaveTimerRef.current = window.setTimeout(() => {
+      const latest = editingRef.current;
+      if (!latest || !editTouchedRef.current) return;
+      void saveEdit(latest);
+    }, 500);
+    return () => {
+      if (debounceSaveTimerRef.current) {
+        window.clearTimeout(debounceSaveTimerRef.current);
+        debounceSaveTimerRef.current = null;
+      }
+    };
+  }, [editing, isEditReady]);
 
   const toggleDateSchedulePanel = () => {
     setScheduleMode("date");
@@ -517,17 +569,28 @@ const handleTaskClick = async (task: Task) => {
     if (!accessToken.trim() || state.status !== "ready") return;
     const targets = state.items.filter((t) => t.completedAt && !t.archivedAt);
     if (targets.length === 0) return;
-    for (const task of targets) {
-      await authedFetch(
-        `/api/tasks/${task.id}`,
+    try {
+      const res = await authedFetch(
+        "/api/tasks/archive-completed",
         {
-          method: "PATCH",
+          method: "POST",
           headers,
-          body: JSON.stringify({ archivedAt: new Date().toISOString() }),
         }
       );
+      if (!res.ok) {
+        fetchView({ silent: true });
+        return;
+      }
+      setState((prev) => {
+        if (prev.status !== "ready") return prev;
+        return {
+          ...prev,
+          items: prev.items.filter((item) => !(item.completedAt && !item.archivedAt)),
+        };
+      });
+    } catch {
+      fetchView({ silent: true });
     }
-    fetchView({ silent: true });
   };
 
   const handleDelete = async (task: Task) => {
@@ -612,6 +675,11 @@ const handleTaskClick = async (task: Task) => {
     }
   return { groups: buildTaskGroups(state.items, projects, areas, view), evening: [] as Task[] };
   }, [state, needsGrouping, projects, areas, view, today, eveningMap]);
+
+  const mixedSortedItems = useMemo(() => {
+    if (state.status !== "ready" || needsGrouping || view === "upcoming" || view === "logbook") return [];
+    return sortMixedByDateAndCreated(state.items);
+  }, [state, needsGrouping, view]);
 
   const upcomingSections = useMemo(() => {
     if (state.status !== "ready") return [];
@@ -788,7 +856,6 @@ const handleTaskClick = async (task: Task) => {
                         editNoteRef={editNoteRef}
                         onFocusTarget={handleFocusTarget}
                         onInputFocus={handleFocus}
-                        onBlurSave={handleBlurSave}
                         onEdit={startEdit}
                         onEditChange={handleEditChange}
                         onScheduleChange={handleScheduleChange}
@@ -822,7 +889,6 @@ const handleTaskClick = async (task: Task) => {
                         editNoteRef={editNoteRef}
                         onFocusTarget={handleFocusTarget}
                         onInputFocus={handleFocus}
-                        onBlurSave={handleBlurSave}
                         onEdit={handleTaskClick}
                         onEditChange={handleEditChange}
                         onScheduleChange={handleScheduleChange}
@@ -875,7 +941,6 @@ const handleTaskClick = async (task: Task) => {
                           editNoteRef={editNoteRef}
                           onFocusTarget={handleFocusTarget}
                           onInputFocus={handleFocus}
-                          onBlurSave={handleBlurSave}
                           onEdit={handleTaskClick}
                           onEditChange={handleEditChange}
                           onScheduleChange={handleScheduleChange}
@@ -918,7 +983,6 @@ const handleTaskClick = async (task: Task) => {
                         editNoteRef={editNoteRef}
                         onFocusTarget={handleFocusTarget}
                         onInputFocus={handleFocus}
-                        onBlurSave={handleBlurSave}
                         onEdit={handleTaskClick}
                         onEditChange={handleEditChange}
                         onScheduleChange={handleScheduleChange}
@@ -935,7 +999,7 @@ const handleTaskClick = async (task: Task) => {
 
               {!needsGrouping && view !== "upcoming" && view !== "logbook" && (
                 <TaskList
-                  items={sortMixedByDateAndCreated(state.items)}
+                  items={mixedSortedItems}
                   editing={editing}
                   isLocked={isLocked}
                   isLogbook={isLogbook}
@@ -953,7 +1017,6 @@ const handleTaskClick = async (task: Task) => {
                   editNoteRef={editNoteRef}
                   onFocusTarget={handleFocusTarget}
                   onInputFocus={handleFocus}
-                  onBlurSave={handleBlurSave}
                   onEdit={handleTaskClick}
                   onEditChange={handleEditChange}
                   onScheduleChange={handleScheduleChange}
@@ -1036,7 +1099,6 @@ type TaskListProps = {
   editNoteRef: React.RefObject<HTMLTextAreaElement | null>;
   onFocusTarget: (target: "title" | "note") => void;
   onInputFocus: (event: React.FocusEvent<HTMLElement>) => void;
-  onBlurSave: () => void;
   onEdit: (task: Task) => void;
   onEditChange: (editing: Editing | null) => void;
   onScheduleChange: (next: Partial<Editing>) => void;
@@ -1066,7 +1128,6 @@ function TaskList({
   editNoteRef,
   onFocusTarget,
   onInputFocus,
-  onBlurSave,
   onEdit,
   onEditChange,
   onScheduleChange,
@@ -1122,7 +1183,6 @@ function TaskList({
                           onFocusTarget("title");
                         }}
                         onFocus={onInputFocus}
-                        onBlur={onBlurSave}
                         readOnly={!isEditReady}
                         data-readonly={!isEditReady ? "true" : undefined}
                         ref={editTitleRef}
@@ -1150,7 +1210,6 @@ function TaskList({
                         onFocusTarget("note");
                       }}
                       onFocus={onInputFocus}
-                      onBlur={onBlurSave}
                       readOnly={!isEditReady}
                       data-readonly={!isEditReady ? "true" : undefined}
                       ref={editNoteRef}
@@ -1310,104 +1369,142 @@ function TaskList({
           );
         }
         return (
-          <div
+          <ReadonlyTaskRow
             key={item.id}
-            className={`task-row clickable ${item.completedAt ? "completed" : ""}${isDisabled ? " is-disabled" : ""}`}
-            aria-disabled={isDisabled}
-            onClick={() => {
-              if (isDisabled) return;
-              onEdit(item);
-            }}
-          >
-            <div className="task-header">
-              <div className="task-main">
-                <div className="task-title-row">
-                  <label className="checkbox">
-                    <input
-                      type="checkbox"
-                      checked={Boolean(item.completedAt)}
-                      onClick={(e) => e.stopPropagation()}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        onToggleComplete(item);
-                      }}
-                      disabled={isLogbook || isDisabled}
-                    />
-                  </label>
-                <div>
-                  <div className="task-title-cell">
-                    <input
-                      className="title-input"
-                      value={item.title}
-                      readOnly
-                      data-readonly="true"
-                      tabIndex={-1}
-                    />
-                  </div>
-                </div>
-                </div>
-              </div>
-              <div className="task-meta">
-                {(() => {
-                  const refDate = getOverdueReferenceDate(item.date, item.deadline);
-                  if (!refDate || !isDateBefore(refDate, today)) return null;
-                  return (
-                    <TaskDateBadge
-                      task={item}
-                      today={today}
-                      eveningMap={eveningMap}
-                      referenceDate={refDate}
-                    />
-                  );
-                })()}
-                <div className="row-actions" />
-              </div>
-            </div>
-            <div className="task-details">
-              <div className="task-details-inner">
-                <textarea
-                  className="note-input draft-offset"
-                  value={item.note ?? ""}
-                  placeholder="Note (optional)"
-                  rows={3}
-                  readOnly
-                  data-readonly="true"
-                  tabIndex={-1}
-                />
-              </div>
-            </div>
-          </div>
+            item={item}
+            isDisabled={isDisabled}
+            isLogbook={isLogbook}
+            today={today}
+            evening={Boolean(eveningMap[item.id])}
+            onEdit={onEdit}
+            onToggleComplete={onToggleComplete}
+          />
         );
       })}
     </div>
   );
 }
 
+type ReadonlyTaskRowProps = {
+  item: Task;
+  isDisabled: boolean;
+  isLogbook: boolean;
+  today: string;
+  evening: boolean;
+  onEdit: (task: Task) => void;
+  onToggleComplete: (task: Task) => void;
+};
+
+const ReadonlyTaskRow = memo(
+  function ReadonlyTaskRow({
+    item,
+    isDisabled,
+    isLogbook,
+    today,
+    evening,
+    onEdit,
+    onToggleComplete,
+  }: ReadonlyTaskRowProps) {
+    const refDate = getOverdueReferenceDate(item.date, item.deadline);
+    const overdueDate = refDate && isDateBefore(refDate, today) ? refDate : undefined;
+    return (
+      <div
+        className={`task-row clickable ${item.completedAt ? "completed" : ""}${isDisabled ? " is-disabled" : ""}`}
+        aria-disabled={isDisabled}
+        onClick={() => {
+          if (isDisabled) return;
+          onEdit(item);
+        }}
+      >
+        <div className="task-header">
+          <div className="task-main">
+            <div className="task-title-row">
+              <label className="checkbox">
+                <input
+                  type="checkbox"
+                  checked={Boolean(item.completedAt)}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    onToggleComplete(item);
+                  }}
+                  disabled={isLogbook || isDisabled}
+                />
+              </label>
+              <div>
+                <div className="task-title-cell">
+                  <input
+                    className="title-input"
+                    value={item.title}
+                    readOnly
+                    data-readonly="true"
+                    tabIndex={-1}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="task-meta">
+            {overdueDate ? (
+              <TaskDateBadge
+                task={item}
+                today={today}
+                evening={evening}
+                referenceDate={overdueDate}
+              />
+            ) : null}
+            <div className="row-actions" />
+          </div>
+        </div>
+        <div className="task-details">
+          <div className="task-details-inner">
+            <textarea
+              className="note-input draft-offset"
+              value={item.note ?? ""}
+              placeholder="Note (optional)"
+              rows={3}
+              readOnly
+              data-readonly="true"
+              tabIndex={-1}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  },
+  (prev, next) =>
+    prev.item === next.item &&
+    prev.isDisabled === next.isDisabled &&
+    prev.isLogbook === next.isLogbook &&
+    prev.today === next.today &&
+    prev.evening === next.evening
+);
+
 function getTaskDateLabel(
   task: Task,
   today: string,
-  eveningMap: Record<string, boolean>,
+  evening: boolean,
   referenceDate?: string
 ) {
   if (referenceDate) return referenceDate;
   if (task.someday) return "Someday";
   if (!task.date) return "";
-  if (task.date === today) return eveningMap[task.id] ? "This Evening" : "Today";
+  if (task.date === today) return evening ? "This Evening" : "Today";
   return task.date;
 }
 
 function TaskDateBadge({
   task,
   today,
-  eveningMap,
+  evening,
   referenceDate,
 }: {
   task: Task;
   today: string;
-  eveningMap: Record<string, boolean>;
+  evening: boolean;
   referenceDate?: string;
 }) {
-  const label = getTaskDateLabel(task, today, eveningMap, referenceDate);
+  const label = getTaskDateLabel(task, today, evening, referenceDate);
   if (!label) return null;
   return <DateBadge label={label} today={today} />;
 }
@@ -1415,13 +1512,15 @@ function TaskDateBadge({
 function buildTaskGroups(items: Task[], projects: ProjectRef[], areas: AreaRef[], view: string) {
   const projectOrder = new Map(projects.map((p, index) => [p.id, index]));
   const areaOrder = new Map(areas.map((a, index) => [a.id, index]));
+  const projectNameById = new Map(projects.map((p) => [p.id, p.name]));
+  const areaNameById = new Map(areas.map((a) => [a.id, a.name]));
   const projectGroups = new Map<string, { title: string; items: Task[] }>();
   const areaGroups = new Map<string, { title: string; items: Task[] }>();
   const noGroup: Task[] = [];
 
   for (const item of items) {
     if (item.projectId) {
-      const title = projects.find((p) => p.id === item.projectId)?.name ?? "Project";
+      const title = projectNameById.get(item.projectId) ?? "Project";
       if (!projectGroups.has(item.projectId)) {
         projectGroups.set(item.projectId, { title, items: [] });
       }
@@ -1429,7 +1528,7 @@ function buildTaskGroups(items: Task[], projects: ProjectRef[], areas: AreaRef[]
       continue;
     }
     if (item.areaId) {
-      const title = areas.find((a) => a.id === item.areaId)?.name ?? "Area";
+      const title = areaNameById.get(item.areaId) ?? "Area";
       if (!areaGroups.has(item.areaId)) {
         areaGroups.set(item.areaId, { title, items: [] });
       }
