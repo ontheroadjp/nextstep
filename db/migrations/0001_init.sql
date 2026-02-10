@@ -80,6 +80,21 @@ create index if not exists idx_tasks_user_id_completed_at_desc
 create index if not exists idx_tasks_area_id on tasks(area_id);
 create index if not exists idx_tasks_project_id on tasks(project_id);
 create index if not exists idx_tasks_user_id on tasks(user_id);
+create index if not exists idx_tasks_today_lookup
+  on tasks(user_id, date, sort_key, created_at)
+  where archived_at is null and someday = false and date is not null;
+create index if not exists idx_tasks_anytime_lookup
+  on tasks(user_id, sort_key, created_at)
+  where archived_at is null and someday = false and date is null;
+create index if not exists idx_tasks_someday_lookup
+  on tasks(user_id, sort_key, created_at)
+  where archived_at is null and someday = true;
+create index if not exists idx_tasks_logbook_lookup
+  on tasks(user_id, archived_at desc)
+  where archived_at is not null;
+create index if not exists idx_tasks_inbox_lookup
+  on tasks(user_id, created_at desc)
+  where archived_at is null and area_id is null;
 create index if not exists idx_projects_user_id on projects(user_id);
 create index if not exists idx_areas_user_id on areas(user_id);
 create index if not exists idx_projects_area_id on projects(area_id);

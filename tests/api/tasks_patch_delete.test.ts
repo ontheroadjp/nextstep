@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 let areaExists = true;
 let projectExists = true;
 let projectAreaId: string | null = null;
+let lastTaskUpdate: Record<string, unknown> | null = null;
 
 vi.mock("../../app/api/_helpers", async () => {
   const actual = await vi.importActual<typeof import("../../app/api/_helpers")>(
@@ -19,7 +20,9 @@ vi.mock("../../app/api/_supabase", () => ({
     from: (table: string) => {
       if (table === "tasks") {
         return {
-          update: () => ({
+          update: (payload: Record<string, unknown>) => {
+            lastTaskUpdate = payload;
+            return {
             eq: () => ({
               eq: () => ({
                 select: () => ({
@@ -42,7 +45,8 @@ vi.mock("../../app/api/_supabase", () => ({
                 }),
               }),
             }),
-          }),
+            };
+          },
           delete: () => ({
             eq: () => ({
               eq: async () => ({ error: null }),
@@ -70,6 +74,47 @@ vi.mock("../../app/api/_supabase", () => ({
 import { PATCH as tasksPATCH, DELETE as tasksDELETE } from "../../app/api/tasks/[id]/route";
 
 describe("Tasks PATCH/DELETE", () => {
+  it("PATCH sets date/deadline to null when someday=true", async () => {
+    lastTaskUpdate = null;
+    const req = new Request("http://localhost", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: "Task",
+        note: "Note",
+        someday: true,
+      }),
+    });
+    const res = await tasksPATCH(req, { params: Promise.resolve({ id: "t1" }) });
+    expect(res.status).toBe(200);
+    expect(lastTaskUpdate).toMatchObject({
+      title: "Task",
+      note: "Note",
+      someday: true,
+      date: null,
+      deadline: null,
+    });
+  });
+
+  it("PATCH forces someday=false when date is provided", async () => {
+    lastTaskUpdate = null;
+    const req = new Request("http://localhost", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: "Task",
+        note: "Note",
+        date: "2026-02-12",
+      }),
+    });
+    const res = await tasksPATCH(req, { params: Promise.resolve({ id: "t1" }) });
+    expect(res.status).toBe(200);
+    expect(lastTaskUpdate).toMatchObject({
+      date: "2026-02-12",
+      someday: false,
+    });
+  });
+
   it("PATCH rejects empty title", async () => {
     const req = new Request("http://localhost", {
       method: "PATCH",

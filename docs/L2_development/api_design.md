@@ -34,8 +34,8 @@
 ## エンティティ API
 - Areas: `GET/POST /api/areas`, `GET/PATCH/DELETE /api/areas/{areaId}`
 - Projects: `GET/POST /api/projects`, `GET/PATCH/DELETE /api/projects/{projectId}`
-- Tasks: `POST /api/tasks`, `PATCH/DELETE /api/tasks/{id}`
-- Checklists: `POST /api/tasks/{id}/checklists`, `PATCH/DELETE /api/checklists/{id}`
+- Tasks: `POST /api/tasks`, `PATCH/DELETE /api/tasks/{id}`, `POST /api/tasks/archive-completed`
+- Checklists: `GET/POST /api/tasks/{id}/checklists`, `PATCH/DELETE /api/checklists/{id}`
 
 根拠: `app/api/areas/route.ts`, `app/api/areas/[areaId]/route.ts`, `app/api/projects/route.ts`, `app/api/projects/[projectId]/route.ts`, `app/api/tasks/route.ts`, `app/api/tasks/[id]/route.ts`, `app/api/tasks/[id]/checklists/route.ts`, `app/api/checklists/[id]/route.ts`
 
