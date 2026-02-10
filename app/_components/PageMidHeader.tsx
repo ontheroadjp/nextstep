@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export function PageMidHeader({ title, href = "/" }: { title: string; href?: string }) {
+export function PageMidHeader({ title, href = "/top" }: { title: string; href?: string }) {
   return (
     <section className="page-mid-header">
       <h1>

@@ -1,11 +1,13 @@
 bk_*
 temp_for_ai
 .env
+.env.zwc
 .next
 node_modules
 dist
 coverage
 .DS_Store
+supabase
 npm-debug.log
 yarn-error.log
 pnpm-debug.log
