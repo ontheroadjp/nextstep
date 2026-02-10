@@ -66,9 +66,15 @@
 - Project: `name` / `note` 必須。
 - Area: `name` 必須。
 - Checklist: `title` 必須。
+- Checklist 一覧取得: `GET /api/tasks/{id}/checklists`（`sort_key` 昇順 + `created_at` 昇順）
 - `sortKey` は任意だが空文字は拒否。
 
 根拠: `app/api/projects/route.ts`, `app/api/areas/route.ts`, `app/api/checklists/[id]/route.ts`, `app/api/tasks/[id]/checklists/route.ts`
+
+## 完了タスクの一括アーカイブ
+- `POST /api/tasks/archive-completed` は `completed_at is not null and archived_at is null` のタスクを一括更新し、`archivedAt` と `archivedCount` を返す。
+
+根拠: `app/api/tasks/archive-completed/route.ts`, `app/(views)/[view]/page.tsx`
 
 ## データ制約（DB）
 - `tasks.someday = true` の場合 `tasks.date is null` かつ `tasks.deadline is null`
