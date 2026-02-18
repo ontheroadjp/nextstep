@@ -11,6 +11,10 @@
 2. 開発サーバー起動
    - `npm run dev`
 
+### 依存バージョン整合メモ
+- `next` は `package.json` で固定バージョン（現行: `15.5.12`）を使用し、`package-lock.json` と揃えて管理する。
+- 起動時の `@next/swc` mismatch warning が出る場合は、`next` と lockfile の再解決を優先して整合を取る。
+
 根拠: `package.json`, `.github/workflows/tests.yml`
 
 ## 環境変数
