@@ -1,3 +1,5 @@
+import { t, type AppLocale } from "./i18n";
+
 export const DEFAULT_TZ_OFFSET = "540";
 
 export function getTodayString(offsetMinutes: number) {
@@ -11,10 +13,11 @@ export function getTodayString(offsetMinutes: number) {
 
 export function getScheduleLabel(
   fields: { someday: boolean; date: string; evening: boolean },
-  today: string
+  today: string,
+  locale: AppLocale = "en"
 ) {
-  if (fields.someday) return "Someday";
+  if (fields.someday) return t(locale, "someday");
   if (!fields.date) return "";
-  if (fields.date === today) return fields.evening ? "This Evening" : "Today";
+  if (fields.date === today) return fields.evening ? t(locale, "this_evening") : t(locale, "today");
   return fields.date;
 }

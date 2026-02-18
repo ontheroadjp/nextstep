@@ -31,13 +31,13 @@
 - `This Evening`: `fa-moon`（`.date-evening`）
 - `Someday`: `fa-archive`（`.icon-someday`）
 - その他: `fa-calendar`（`.icon-upcoming`）
-- 直近日付の表示ルール（`en-US`）:
+- 直近日付の表示ルール（locale 連動: `en-US` / `ja-JP` / `zh-CN`）:
   - 明日: `Tomorrow`
   - 今日から2〜5日後: 曜日（例: `Mon`）
   - 6日後以降: `m/d(曜日)`（ゼロ埋めなし）
   - 過去日付: 超過基準日（`deadline ?? date`）が `today` 未満の場合に `Nd ago` + `fa-flag`、文字色は紫（`.date-overdue`）
 
-根拠: `app/page.tsx`, `app/(views)/[view]/page.tsx`, `app/areas/[areaId]/page.tsx`, `app/projects/[projectId]/page.tsx`, `app/globals.css`
+根拠: `app/page.tsx`, `app/(views)/[view]/page.tsx`, `app/areas/[areaId]/page.tsx`, `app/projects/[projectId]/page.tsx`, `app/_lib/i18n.ts`, `app/globals.css`
 
 ### カラー詳細（HEX）
 - メインカラー（Text/Inks）: `#1b1a16`（`--ink`）
@@ -71,6 +71,7 @@
 - 主要レイアウトは `display: grid` を前提に構成
 - グリッドは `auto-fit + minmax` を多用（カード一覧など）
 - 主要コンテナ `.hero.page` は `min-height: 100svh` と固定パディングで余白を確保
+- ヘッダ右上に言語セレクター（`.hero-top-right` 配下の `.locale-switcher`）を配置する
 
 根拠: `app/globals.css`
 
@@ -114,6 +115,7 @@
 - 日付/スケジュール: `.schedule`, `.schedule-label-button`, `.date-badge`
 - 日付/スケジュール: カレンダーアイコン（実行日編集）とフラグアイコン（deadline 編集）を横並びで表示する
 - カレンダー: `.calendar`, `.calendar-header`, `.calendar-grid`
+- カレンダー曜日ヘッダは locale 連動で生成する（固定英語配列を使わない）
 - deadline パネル: Today/This Evening/Someday ボタンは表示しない（Calendar/Clear のみ）
 - カレンダー: 今日セルは `Today` アイコンのみ表示（テキストなし）、過去日は非表示
 - ボタン: `Today / This Evening / Someday` は高さ 1.8 倍、`Someday` は全幅、`Clear` は赤系
@@ -130,6 +132,7 @@
 - 日付/スケジュール: `.schedule`, `.schedule-label-button`, `.date-badge`
 - 日付/スケジュール: カレンダーアイコン（実行日編集）とフラグアイコン（deadline 編集）を横並びで表示する
 - カレンダー: `.calendar`, `.calendar-header`, `.calendar-grid`
+- カレンダー曜日ヘッダは locale 連動で生成する（固定英語配列を使わない）
 - deadline パネル: Today/This Evening/Someday ボタンは表示しない（Calendar/Clear のみ）
 - deadline 表示: 日付表示の下に `.deadline-meta` で `Deadline YYYY-MM-DD` を表示
 
@@ -144,6 +147,7 @@
 - 日付/スケジュール: `.schedule`, `.schedule-label-button`, `.date-badge`
 - 日付/スケジュール: カレンダーアイコン（実行日編集）とフラグアイコン（deadline 編集）を横並びで表示する
 - カレンダー: `.calendar`, `.calendar-header`, `.calendar-grid`
+- カレンダー曜日ヘッダは locale 連動で生成する（固定英語配列を使わない）
 - deadline パネル: Today/This Evening/Someday ボタンは表示しない（Calendar/Clear のみ）
 - deadline 表示: 日付表示の下に `.deadline-meta` で `Deadline YYYY-MM-DD` を表示
 

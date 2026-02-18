@@ -1,8 +1,10 @@
 import type { Dispatch, SetStateAction } from "react";
 
 import type { AuthProvider } from "../_hooks/useClientAuth";
+import { t, type AppLocale } from "../_lib/i18n";
 
 type AccessSettingsFooterProps = {
+  locale: AppLocale;
   authProvider: AuthProvider;
   setAuthProvider: Dispatch<SetStateAction<AuthProvider>>;
   loginEmail: string;
@@ -21,6 +23,7 @@ type AccessSettingsFooterProps = {
 };
 
 export function AccessSettingsFooter({
+  locale,
   authProvider,
   setAuthProvider,
   loginEmail,
@@ -43,13 +46,13 @@ export function AccessSettingsFooter({
         {!isAuthenticated && (
           <>
             <label>
-              Login Method
+              {t(locale, "login_method")}
               <select value={authProvider} onChange={(e) => setAuthProvider(e.target.value as AuthProvider)}>
                 <option value="password">Email / Password</option>
               </select>
             </label>
             <label>
-              Email
+              {t(locale, "email")}
               <input
                 type="email"
                 value={loginEmail}
@@ -59,7 +62,7 @@ export function AccessSettingsFooter({
               />
             </label>
             <label>
-              Password
+              {t(locale, "password")}
               <input
                 type="password"
                 value={loginPassword}
@@ -71,19 +74,19 @@ export function AccessSettingsFooter({
           </>
         )}
         <label>
-          TZ Offset (minutes)
+          {t(locale, "tz_offset")}
           <input value={tzOffset} onChange={(e) => setTzOffset(e.target.value)} placeholder="540" />
         </label>
         <div className="actions">
           <button onClick={onRefresh} disabled={!canFetch}>
-            Refresh
+            {t(locale, "refresh")}
           </button>
           {!isAuthenticated && (
             <button onClick={onLogin} disabled={isAuthLoading || !loginEmail.trim() || !loginPassword}>
-              {isAuthLoading ? "Logging in..." : "Login"}
+              {isAuthLoading ? t(locale, "logging_in") : t(locale, "login")}
             </button>
           )}
-          {isAuthenticated && <button onClick={onLogout}>Logout</button>}
+          {isAuthenticated && <button onClick={onLogout}>{t(locale, "logout")}</button>}
           {authError && <span className="error">{authError}</span>}
         </div>
       </div>

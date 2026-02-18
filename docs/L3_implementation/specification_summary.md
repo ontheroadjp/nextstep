@@ -89,6 +89,9 @@
 - `app/page.tsx` は公開トップとして「ログインが必要です」カードのみ表示する。
 - ダッシュボードは `app/top/page.tsx` で Today/Inbox の件数と Area を表示する。
 - `app/login/page.tsx` はログイン成功後に `/top` へ遷移する。
+- `app/page.tsx` / `app/login/page.tsx` / `app/top/page.tsx` / `app/(views)/[view]/page.tsx` / `app/areas/[areaId]/page.tsx` / `app/projects/[projectId]/page.tsx` は `useLocale` を利用し、`localStorage`（`ns-locale`）で保持した言語（`en`/`ja`/`zh`）に応じて UI 文言を切り替える。
+- 各ページの `PageHero` 右上に `LocaleSwitcher` を表示し、言語を切り替える。
+- 言語変更時は `useLocale` が `document.documentElement.lang` を更新する（`en-US` / `ja-JP` / `zh-CN`）。
 - ダッシュボードの Today/Inbox detail（`Overdue x / ...`）は超過基準日（`deadline ?? date`）で集計する。
 - 各ビューは `/api/{view}` を取得して表示。
 - `PageMidHeader` の既定リンク先は `/top`。
@@ -98,15 +101,16 @@
 - `useClientAuth` は `accessToken` / `refreshToken` / `tzOffset` を `localStorage` で保持し、`login` / `logout` を提供する。
 - フッターは `Login Method` / `Email` / `Password` / `TZ Offset` を表示し、未認証時は `Login`、認証済みは `Logout` を表示する（`Refresh` は維持）。
 - `authProvider` は現状 `password` のみ実装され、認証方式の拡張ポイントとして扱う。
-- 画面横断で再利用する UI は `app/_components` に集約する（`CategoryCard`, `PageHero`, `PageMidHeader`, `AccessSettingsFooter`）。
+- 画面横断で再利用する UI は `app/_components` に集約する（`CategoryCard`, `PageHero`, `PageMidHeader`, `AccessSettingsFooter`, `LocaleSwitcher`）。
 - `localStorage` 読み書きは `app/_hooks/useStoredState.ts`（`useStoredValue`, `useStoredJson`）を利用する。
+- 言語状態管理は `app/_hooks/useLocale.ts` と `app/_lib/i18n.ts`（辞書/翻訳関数）で共通化する。
 - トークン状態（`accessToken`/`refreshToken`/`tzOffset`）と `x-tz-offset-minutes` ヘッダ生成は `app/_hooks/useClientAuth.ts` に共通化し、`app/page.tsx` / `app/top/page.tsx` / `app/login/page.tsx` / `app/(views)/[view]/page.tsx` / `app/areas/[areaId]/page.tsx` / `app/projects/[projectId]/page.tsx` が利用する。
 - `useStoredValue` は初回 hydration 完了前に `localStorage` へ書き戻さない（初期空文字で既存 token を上書きしない）。
-- 日付表示の共通計算は `app/_lib/date.ts`（`DEFAULT_TZ_OFFSET`, `getTodayString`, `getScheduleLabel`）を利用する。
+- 日付表示の共通計算は `app/_lib/date.ts`（`DEFAULT_TZ_OFFSET`, `getTodayString`, `getScheduleLabel`）を利用し、`getScheduleLabel` は locale 入力に応じて `Today` / `This Evening` / `Someday` ラベルを切り替える。
 - `app/(views)/[view]/page.tsx` は `today/anytime/someday` のメタ情報（`areas/projects`）を token 単位でキャッシュし、View 間遷移時の重複取得を抑制する（`Refresh` は強制再取得）。
 - クライアントの API 呼び出しは `useClientAuth` が返す `authedFetch`（内部で `useAuthedFetch` / `fetchWithAutoRefresh` を利用）を通し、`401` 受信時は `refreshToken` で 1 回だけ再発行後に再試行する。
 
-根拠: `app/page.tsx`, `app/top/page.tsx`, `app/login/page.tsx`, `app/(views)/[view]/page.tsx`, `app/areas/[areaId]/page.tsx`, `app/projects/[projectId]/page.tsx`, `app/_components/AccessSettingsFooter.tsx`, `app/_components/CategoryCard.tsx`, `app/_components/PageHero.tsx`, `app/_components/PageMidHeader.tsx`, `app/_hooks/useClientAuth.ts`, `app/_hooks/useStoredState.ts`, `app/_lib/date.ts`, `app/_lib/deadline.ts`, `app/globals.css`
+根拠: `app/page.tsx`, `app/top/page.tsx`, `app/login/page.tsx`, `app/(views)/[view]/page.tsx`, `app/areas/[areaId]/page.tsx`, `app/projects/[projectId]/page.tsx`, `app/_components/AccessSettingsFooter.tsx`, `app/_components/CategoryCard.tsx`, `app/_components/LocaleSwitcher.tsx`, `app/_components/PageHero.tsx`, `app/_components/PageMidHeader.tsx`, `app/_hooks/useClientAuth.ts`, `app/_hooks/useLocale.ts`, `app/_hooks/useStoredState.ts`, `app/_lib/date.ts`, `app/_lib/i18n.ts`, `app/_lib/deadline.ts`, `app/_lib/upcoming_sections.ts`, `app/globals.css`
 
 ## Task 編集 UI のフォーカス挙動
 - タスク編集時は最後にタップした入力（Title / Note）を `lastFocusRef` で記録し、編集有効化時に該当の入力へフォーカスを移す。
@@ -119,6 +123,7 @@
 - フラグアイコン: 締切（deadline）を編集（Calendar/Clear のみ）。
 - `date > deadline` となる変更、および deadline 設定済みタスクの Someday 変更は確認ダイアログを表示し、同意時は deadline をクリアして保存する。
 - deadline 設定済みタスクはスケジュール表示の下に `Deadline YYYY-MM-DD` を表示する。
+- タスク編集時カレンダー（`app/(views)/[view]/page.tsx`, `app/areas/[areaId]/page.tsx`, `app/projects/[projectId]/page.tsx`）は locale に応じて曜日ヘッダ・月表示・相対日付ラベル（Tomorrow 等）を切り替える。
 
 根拠: `app/(views)/[view]/page.tsx`, `app/globals.css`
 

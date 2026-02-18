@@ -3,10 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { AccessSettingsFooter } from "../_components/AccessSettingsFooter";
 import { CategoryCard } from "../_components/CategoryCard";
+import { LocaleSwitcher } from "../_components/LocaleSwitcher";
 import { PageHero } from "../_components/PageHero";
 import { useClientAuth } from "../_hooks/useClientAuth";
+import { useLocale } from "../_hooks/useLocale";
 import { getTodayString } from "../_lib/date";
 import { getOverdueReferenceDate } from "../_lib/deadline";
+import { t } from "../_lib/i18n";
 
 type Task = {
   id: string;
@@ -50,6 +53,7 @@ function splitOverdue(items: Task[], today: string) {
 }
 
 export default function HomePage() {
+  const { locale, setLocale } = useLocale();
   const {
     accessToken,
     authProvider,
@@ -122,64 +126,72 @@ export default function HomePage() {
     <main>
       <PageHero
         eyebrow="Nextstep"
-        title="Daily dashboard"
-        lead="Today と Inbox の件数だけを表示。エリアは同列に並べて確認できます。"
+        title={t(locale, "dashboard_title")}
+        lead={t(locale, "dashboard_lead")}
+        rightSlot={<LocaleSwitcher locale={locale} setLocale={setLocale} />}
       />
 
       <section className="grid">
         <CategoryCard
-          title="Today"
+          locale={locale}
+          title={t(locale, "view_today")}
           href="/today"
           status={today.status}
-          detail={`Overdue ${todayCount.overdue} / Today ${todayCount.rest}`}
+          detail={`${t(locale, "overdue")} ${todayCount.overdue} / ${t(locale, "today")} ${todayCount.rest}`}
           showDetail={today.status === "ready"}
           icon={<i className="fa-solid fa-star icon-today" aria-hidden />}
         />
         <CategoryCard
-          title="Upcoming"
+          locale={locale}
+          title={t(locale, "view_upcoming")}
           href="/upcoming"
           status={today.status}
           icon={<i className="fa-solid fa-calendar icon-upcoming" aria-hidden />}
         />
         <CategoryCard
-          title="Anytime"
+          locale={locale}
+          title={t(locale, "view_anytime")}
           href="/anytime"
           status={today.status}
           icon={<i className="fa-brands fa-stack-overflow icon-anytime" aria-hidden />}
         />
         <CategoryCard
-          title="Someday"
+          locale={locale}
+          title={t(locale, "view_someday")}
           href="/someday"
           status={today.status}
           icon={<i className="fa-solid fa-archive icon-someday" aria-hidden />}
         />
         <CategoryCard
-          title="Logbook"
+          locale={locale}
+          title={t(locale, "view_logbook")}
           href="/logbook"
           status={today.status}
           icon={<i className="fa-solid fa-book icon-logbook" aria-hidden />}
         />
         <CategoryCard
-          title="Inbox"
+          locale={locale}
+          title={t(locale, "view_inbox")}
           href="/inbox"
           status={inbox.status}
-          detail={`Overdue ${inboxCount.overdue} / Others ${inboxCount.rest}`}
+          detail={`${t(locale, "overdue")} ${inboxCount.overdue} / ${t(locale, "others")} ${inboxCount.rest}`}
           showDetail={inbox.status === "ready"}
           icon={<i className="fa-solid fa-inbox icon-inbox" aria-hidden />}
         />
-        {areas.status === "loading" && <CategoryCard title="Areas" status="loading" />}
+        {areas.status === "loading" && <CategoryCard locale={locale} title={t(locale, "view_areas")} status="loading" />}
         {areas.status === "error" && (
-          <CategoryCard title="Areas" status="error" detail="Failed to load areas" showDetail />
+          <CategoryCard locale={locale} title={t(locale, "view_areas")} status="error" detail={t(locale, "failed_to_load_areas")} showDetail />
         )}
         {areas.status === "ready" && areas.items.length === 0 && (
-          <CategoryCard title="Areas" status="ready" detail="No areas" showDetail />
+          <CategoryCard locale={locale} title={t(locale, "view_areas")} status="ready" detail={t(locale, "no_areas")} showDetail />
         )}
         {areas.status === "ready" &&
           areas.items.map((area) => (
-            <CategoryCard key={area.id} title={area.name} href={`/areas/${area.id}`} />
+            <CategoryCard locale={locale} key={area.id} title={area.name} href={`/areas/${area.id}`} />
           ))}
       </section>
       <AccessSettingsFooter
+        locale={locale}
         authProvider={authProvider}
         setAuthProvider={setAuthProvider}
         loginEmail={loginEmail}

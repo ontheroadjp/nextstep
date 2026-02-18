@@ -1,9 +1,11 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { t, type AppLocale } from "../_lib/i18n";
 
 type ViewStatus = "idle" | "loading" | "error" | "ready";
 
 type CategoryCardProps = {
+  locale: AppLocale;
   title: string;
   href?: string;
   status?: ViewStatus;
@@ -13,6 +15,7 @@ type CategoryCardProps = {
 };
 
 export function CategoryCard({
+  locale,
   title,
   href,
   status = "ready",
@@ -29,9 +32,9 @@ export function CategoryCard({
         </h2>
         <span className="badge">{status === "loading" ? "…" : "-"}</span>
       </div>
-      {status === "error" && <p className="error">{detail ?? "Failed to load"}</p>}
-      {status === "loading" && <p className="muted">Loading...</p>}
-      {status === "idle" && <p className="muted">No data yet.</p>}
+      {status === "error" && <p className="error">{detail ?? t(locale, "failed_to_load")}</p>}
+      {status === "loading" && <p className="muted">{t(locale, "loading")}</p>}
+      {status === "idle" && <p className="muted">{t(locale, "no_data_yet")}</p>}
       {showDetail && status === "ready" && <p className="detail">{detail}</p>}
     </div>
   );

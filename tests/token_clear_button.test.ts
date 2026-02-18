@@ -7,7 +7,7 @@ function read(path: string) {
 
 describe("auth footer login/logout", () => {
   const targets = [
-    "../app/page.tsx",
+    "../app/top/page.tsx",
     "../app/(views)/[view]/page.tsx",
     "../app/areas/[areaId]/page.tsx",
     "../app/projects/[projectId]/page.tsx",
@@ -15,11 +15,11 @@ describe("auth footer login/logout", () => {
 
   it("defines login/logout behavior in shared footer component", () => {
     const source = read("../app/_components/AccessSettingsFooter.tsx");
-    expect(source).toContain("Refresh");
-    expect(source).toContain("Login");
-    expect(source).toContain("Logout");
-    expect(source).toContain("Email");
-    expect(source).toContain("Password");
+    expect(source).toContain('t(locale, "refresh")');
+    expect(source).toContain('t(locale, "login")');
+    expect(source).toContain('t(locale, "logout")');
+    expect(source).toContain('t(locale, "email")');
+    expect(source).toContain('t(locale, "password")');
     expect(source).toContain("authProvider");
     expect(source).not.toContain("Access Token");
     expect(source).not.toContain("Refresh Token");
