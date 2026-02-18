@@ -17,16 +17,16 @@ describe("view page header category cards", () => {
 
   it("switches card title by current view", () => {
     expect(source).toContain('if (view === "today")');
-    expect(source).toContain('title: "Today"');
+    expect(source).toContain('title: t(locale, "today")');
     expect(source).toContain('if (view === "upcoming")');
-    expect(source).toContain('title: "Upcoming"');
+    expect(source).toContain('title: t(locale, "view_upcoming")');
     expect(source).toContain('if (view === "anytime")');
-    expect(source).toContain('title: "Anytime"');
+    expect(source).toContain('title: t(locale, "view_anytime")');
     expect(source).toContain('if (view === "someday")');
-    expect(source).toContain('title: "Someday"');
+    expect(source).toContain('title: t(locale, "someday")');
     expect(source).toContain('if (view === "logbook")');
-    expect(source).toContain('title: "Logbook"');
-    expect(source).toContain('title: "Inbox"');
+    expect(source).toContain('title: t(locale, "view_logbook")');
+    expect(source).toContain('title: t(locale, "view_inbox")');
   });
 
   it("adds a no-group class for unassigned task section", () => {

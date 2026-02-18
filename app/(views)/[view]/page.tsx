@@ -5,9 +5,11 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { AccessSettingsFooter } from "../../_components/AccessSettingsFooter";
 import { CategoryCard } from "../../_components/CategoryCard";
+import { LocaleSwitcher } from "../../_components/LocaleSwitcher";
 import { PageHero } from "../../_components/PageHero";
 import { PageMidHeader } from "../../_components/PageMidHeader";
 import { useClientAuth } from "../../_hooks/useClientAuth";
+import { useLocale } from "../../_hooks/useLocale";
 import { useStoredJson } from "../../_hooks/useStoredState";
 import { getScheduleLabel, getTodayString } from "../../_lib/date";
 import {
@@ -18,6 +20,7 @@ import {
 import { formatOverdueDaysAgo } from "../../_lib/overdue";
 import { sortDatedByDateAscThenCreatedDesc, sortMixedByDateAndCreated } from "../../_lib/task_sort";
 import { buildUpcomingSections, type UpcomingSection } from "../../_lib/upcoming_sections";
+import { t, viewName, type AppLocale } from "../../_lib/i18n";
 
 type Task = {
   id: string;
@@ -57,6 +60,7 @@ type ViewState =
 const ALLOWED_VIEWS = new Set(["today", "upcoming", "anytime", "someday", "logbook", "inbox"]);
 
 export default function ViewPage() {
+  const { locale, setLocale } = useLocale();
   const params = useParams();
   const view = String(params.view ?? "");
   const {
@@ -190,9 +194,9 @@ export default function ViewPage() {
     let initialSomeday = false;
     if (view === "today") initialDate = today;
     if (view === "someday") initialSomeday = true;
-    const defaultTitle = "新規タスク";
+    const defaultTitle = t(locale, "new_task");
     if (!defaultTitle.trim()) {
-      setCreateMessage("タイトルを入力してください");
+      setCreateMessage(t(locale, "input_title_required"));
       createSavingRef.current = false;
       return;
     }
@@ -285,7 +289,7 @@ export default function ViewPage() {
       return false;
     }
     if (!target.title.trim()) {
-      setEditMessage("タイトルを入力してください");
+      setEditMessage(t(locale, "input_title_required"));
       return false;
     }
     savingEditRef.current = true;
@@ -364,10 +368,10 @@ export default function ViewPage() {
     if (candidate.someday) {
       if (shouldWarnSomedayWithDeadline(editing.deadline, true)) {
         const proceed = window.confirm(
-          "This task has a deadline. Move to Someday and clear deadline?"
+          t(locale, "confirm_someday_with_deadline")
         );
         if (!proceed) {
-          setEditMessage("Someday化を中止しました。deadlineを維持する場合は日付設定を続けてください。");
+          setEditMessage(t(locale, "cancel_someday_with_deadline"));
           return;
         }
       }
@@ -376,10 +380,10 @@ export default function ViewPage() {
 
     if (!candidate.someday && isDateAfterDeadline(candidate.date, candidate.deadline)) {
       const clearDeadline = window.confirm(
-        "date is after deadline. OK to clear deadline and continue, Cancel to keep deadline and re-set."
+        t(locale, "confirm_date_after_deadline")
       );
       if (!clearDeadline) {
-        setEditMessage("date と deadline の前後関係を見直してください。");
+        setEditMessage(t(locale, "date_deadline_invalid"));
         return;
       }
       candidate = { ...candidate, deadline: "" };
@@ -645,10 +649,10 @@ const handleTaskClick = async (task: Task) => {
       <main>
         <div className="hero page">
           <div className="panel">
-            <h1>Not Found</h1>
-            <p className="muted">このカテゴリは存在しません。</p>
+            <h1>{t(locale, "not_found")}</h1>
+            <p className="muted">{t(locale, "category_not_found")}</p>
             <Link className="pill-link" href="/top">
-              Back
+              {t(locale, "back")}
             </Link>
           </div>
         </div>
@@ -669,12 +673,12 @@ const handleTaskClick = async (task: Task) => {
       );
       const rest = state.items.filter((item) => !eveningMap[item.id] || item.date !== today);
       return {
-        groups: buildTaskGroups(rest, projects, areas, view),
+        groups: buildTaskGroups(rest, projects, areas, locale),
         evening: sortDatedByDateAscThenCreatedDesc(eveningItems),
       };
     }
-  return { groups: buildTaskGroups(state.items, projects, areas, view), evening: [] as Task[] };
-  }, [state, needsGrouping, projects, areas, view, today, eveningMap]);
+  return { groups: buildTaskGroups(state.items, projects, areas, locale), evening: [] as Task[] };
+  }, [state, needsGrouping, projects, areas, view, today, eveningMap, locale]);
 
   const mixedSortedItems = useMemo(() => {
     if (state.status !== "ready" || needsGrouping || view === "upcoming" || view === "logbook") return [];
@@ -683,62 +687,67 @@ const handleTaskClick = async (task: Task) => {
 
   const upcomingSections = useMemo(() => {
     if (state.status !== "ready") return [];
-    return buildUpcomingSections(state.items, today);
-  }, [state, today]);
+    return buildUpcomingSections(state.items, today, locale);
+  }, [state, today, locale]);
 
   const logbookGroups = useMemo(() => {
     if (state.status !== "ready") return [];
     const offset = Number(tzOffset);
-    return buildLogbookGroups(state.items, today, Number.isFinite(offset) ? offset : 0);
-  }, [state, today, tzOffset]);
+    return buildLogbookGroups(
+      state.items,
+      today,
+      Number.isFinite(offset) ? offset : 0,
+      locale
+    );
+  }, [state, today, tzOffset, locale]);
   const headerCounts = state.status === "ready" ? splitOverdue(state.items, today) : { overdue: 0, rest: 0 };
   const headerCard = useMemo(() => {
     if (view === "today") {
       return {
-        title: "Today",
+        title: t(locale, "today"),
         status: state.status,
-        detail: `Overdue ${headerCounts.overdue} / Today ${headerCounts.rest}`,
+        detail: `${t(locale, "overdue")} ${headerCounts.overdue} / ${t(locale, "today")} ${headerCounts.rest}`,
         showDetail: state.status === "ready",
         icon: <i className="fa-solid fa-star icon-today" aria-hidden />,
       };
     }
     if (view === "upcoming") {
       return {
-        title: "Upcoming",
+        title: t(locale, "view_upcoming"),
         status: state.status,
         icon: <i className="fa-solid fa-calendar icon-upcoming" aria-hidden />,
       };
     }
     if (view === "anytime") {
       return {
-        title: "Anytime",
+        title: t(locale, "view_anytime"),
         status: state.status,
         icon: <i className="fa-brands fa-stack-overflow icon-anytime" aria-hidden />,
       };
     }
     if (view === "someday") {
       return {
-        title: "Someday",
+        title: t(locale, "someday"),
         status: state.status,
         icon: <i className="fa-solid fa-archive icon-someday" aria-hidden />,
       };
     }
     if (view === "logbook") {
       return {
-        title: "Logbook",
+        title: t(locale, "view_logbook"),
         status: state.status,
         icon: <i className="fa-solid fa-book icon-logbook" aria-hidden />,
       };
     }
     return {
-      title: "Inbox",
+      title: t(locale, "view_inbox"),
       status: state.status,
-      detail: `Overdue ${headerCounts.overdue} / Others ${headerCounts.rest}`,
+      detail: `${t(locale, "overdue")} ${headerCounts.overdue} / ${t(locale, "others")} ${headerCounts.rest}`,
       showDetail: state.status === "ready",
       icon: <i className="fa-solid fa-inbox icon-inbox" aria-hidden />,
     };
-  }, [view, state.status, headerCounts.overdue, headerCounts.rest]);
-  const pageTitle = view.toUpperCase();
+  }, [locale, view, state.status, headerCounts.overdue, headerCounts.rest]);
+  const pageTitle = viewName(locale, view);
 
   const handleLogin = async () => {
     const ok = await login(loginEmail, loginPassword);
@@ -752,15 +761,17 @@ const handleTaskClick = async (task: Task) => {
   return (
     <main>
       <PageHero
-        eyebrow="Category"
+        eyebrow={t(locale, "view_category")}
         title={pageTitle}
-        lead="詳細UIは後で調整します。今は一覧だけ確認できます。"
+        lead={t(locale, "view_detail_lead")}
+        rightSlot={<LocaleSwitcher locale={locale} setLocale={setLocale} />}
       />
 
       <PageMidHeader title={pageTitle} />
 
       <section className="grid view-switcher-grid">
         <CategoryCard
+          locale={locale}
           title={headerCard.title}
           status={headerCard.status}
           detail={headerCard.detail}
@@ -772,15 +783,15 @@ const handleTaskClick = async (task: Task) => {
       <section className="grid">
         {!isLogbook && completedCount > 0 && (
           <button className="logbook-stack-button" onClick={archiveCompleted}>
-            Logbook へ整理
+            {t(locale, "sort_to_logbook")}
           </button>
         )}
         <div className="view-card full">
           <div className="toolbar" />
           {createMessage && <p className="error">{createMessage}</p>}
           {state.status === "error" && <p className="error">{state.message}</p>}
-          {state.status === "loading" && <p className="muted">Loading...</p>}
-          {state.status === "idle" && <p className="muted">No data yet.</p>}
+          {state.status === "loading" && <p className="muted">{t(locale, "loading")}</p>}
+          {state.status === "idle" && <p className="muted">{t(locale, "no_data_yet")}</p>}
           {state.status === "ready" && (
             <>
               {needsGrouping && (
@@ -864,12 +875,13 @@ const handleTaskClick = async (task: Task) => {
                         onToggleComplete={toggleComplete}
                         onDelete={handleDelete}
                         editMessage={editMessage}
+                        locale={locale}
                       />
                     </div>
                   ))}
                   {showThisEvening && (
                     <div className="group-card">
-                      <div className="group-header"><div className="group-title">This Evening</div></div>
+                      <div className="group-header"><div className="group-title">{t(locale, "this_evening")}</div></div>
                       <TaskList
                         items={groupedCards.evening}
                         editing={editing}
@@ -897,6 +909,7 @@ const handleTaskClick = async (task: Task) => {
                         onToggleComplete={toggleComplete}
                         onDelete={handleDelete}
                         editMessage={editMessage}
+                        locale={locale}
                       />
                     </div>
                   )}
@@ -905,7 +918,7 @@ const handleTaskClick = async (task: Task) => {
 
               {!needsGrouping && view === "upcoming" && (
                 <div className="group-list">
-                  {upcomingSections.length === 0 && <p className="muted">No tasks</p>}
+                  {upcomingSections.length === 0 && <p className="muted">{t(locale, "no_tasks")}</p>}
                   {upcomingSections.map((section) => (
                     <div key={section.key} className="upcoming-section">
                       {section.kind === "day" ? (
@@ -949,6 +962,7 @@ const handleTaskClick = async (task: Task) => {
                           onToggleComplete={toggleComplete}
                           onDelete={handleDelete}
                           editMessage={editMessage}
+                          locale={locale}
                         />
                       )}
                     </div>
@@ -958,7 +972,7 @@ const handleTaskClick = async (task: Task) => {
 
               {!needsGrouping && view === "logbook" && (
                 <div className="group-list">
-                  {logbookGroups.length === 0 && <p className="muted">No tasks</p>}
+                  {logbookGroups.length === 0 && <p className="muted">{t(locale, "no_tasks")}</p>}
                   {logbookGroups.map((group) => (
                     <div key={group.key} className="date-group">
                       <div className="date-line">
@@ -991,6 +1005,7 @@ const handleTaskClick = async (task: Task) => {
                         onToggleComplete={toggleComplete}
                         onDelete={handleDelete}
                         editMessage={editMessage}
+                        locale={locale}
                       />
                     </div>
                   ))}
@@ -1025,6 +1040,7 @@ const handleTaskClick = async (task: Task) => {
                   onToggleComplete={toggleComplete}
                   onDelete={handleDelete}
                   editMessage={editMessage}
+                  locale={locale}
                 />
               )}
             </>
@@ -1034,7 +1050,7 @@ const handleTaskClick = async (task: Task) => {
           <button
             className="fab-add"
             onClick={createTaskAndEdit}
-            aria-label="Add task"
+            aria-label={t(locale, "add_task")}
             disabled={!canFetch || isLocked}
           >
             +
@@ -1042,6 +1058,7 @@ const handleTaskClick = async (task: Task) => {
         )}
       </section>
       <AccessSettingsFooter
+        locale={locale}
         authProvider={authProvider}
         setAuthProvider={setAuthProvider}
         loginEmail={loginEmail}
@@ -1081,6 +1098,7 @@ function splitOverdue(items: Task[], today: string) {
 }
 
 type TaskListProps = {
+  locale: AppLocale;
   items: Task[];
   editing: Editing | null;
   isLocked: boolean;
@@ -1110,6 +1128,7 @@ type TaskListProps = {
 };
 
 function TaskList({
+  locale,
   items,
   editing,
   isLocked,
@@ -1137,7 +1156,7 @@ function TaskList({
   onDelete,
   editMessage,
 }: TaskListProps) {
-  if (items.length === 0) return <p className="muted">No tasks</p>;
+  if (items.length === 0) return <p className="muted">{t(locale, "no_tasks")}</p>;
   return (
     <div className="task-list">
       {items.map((item) => {
@@ -1178,7 +1197,7 @@ function TaskList({
                         className="title-input"
                         value={editing.title}
                         onChange={(e) => onEditChange({ ...editing, title: e.target.value })}
-                        placeholder="Title"
+                        placeholder={t(locale, "title")}
                         onPointerDown={() => {
                           onFocusTarget("title");
                         }}
@@ -1204,7 +1223,7 @@ function TaskList({
                       className="note-input draft-offset"
                       value={editing.note}
                       onChange={(e) => onEditChange({ ...editing, note: e.target.value })}
-                      placeholder="Note (optional)"
+                      placeholder={t(locale, "note_optional")}
                       rows={3}
                       onPointerDown={() => {
                         onFocusTarget("note");
@@ -1216,7 +1235,7 @@ function TaskList({
                       tabIndex={isEditReady ? 0 : -1}
                     />
                   <div className="schedule draft-offset">
-                    {getScheduleLabel(editing, today) ? (
+                    {getScheduleLabel(editing, today, locale) ? (
                       <button
                         className="schedule-label-button"
                         onClick={(event) => {
@@ -1226,7 +1245,8 @@ function TaskList({
                         onPointerDown={(event) => event.stopPropagation()}
                       >
                         <DateBadge
-                          label={getScheduleLabel(editing, today)}
+                          label={getScheduleLabel(editing, today, locale)}
+                          locale={locale}
                           today={today}
                         />
                       </button>
@@ -1234,7 +1254,7 @@ function TaskList({
                       <span />
                     )}
                     <div className="icon-row">
-                      {!getScheduleLabel(editing, today) && (
+                      {!getScheduleLabel(editing, today, locale) && (
                         <button
                           className="icon-button"
                           onClick={(event) => {
@@ -1267,7 +1287,7 @@ function TaskList({
                     <div className="deadline-meta draft-offset">
                       <span className="date-badge">
                         <i className="fa-solid fa-flag icon-upcoming" aria-hidden />
-                        Deadline {editing.deadline}
+                        {t(locale, "deadline")} {editing.deadline}
                       </span>
                     </div>
                   ) : null}
@@ -1288,7 +1308,7 @@ function TaskList({
                             setIsEditScheduleOpen(false);
                           }}
                         >
-                          Today
+                          {t(locale, "today")}
                         </button>
                         <button
                           className="pill ghost"
@@ -1302,11 +1322,12 @@ function TaskList({
                           }}
                         >
                           <i className="fa-solid fa-moon" aria-hidden />
-                          This Evening
+                          {t(locale, "this_evening")}
                         </button>
                         <InlineCalendar
                           selectedDate={editing.someday ? "" : editing.date}
                           today={today}
+                          locale={locale}
                           onSelect={(date) => {
                             onScheduleChange({
                               date,
@@ -1324,7 +1345,7 @@ function TaskList({
                           }}
                         >
                           <i className="fa-solid fa-archive icon-someday" aria-hidden />
-                          Someday
+                          {t(locale, "someday")}
                         </button>
                         <button
                           className="pill ghost clear-date"
@@ -1333,7 +1354,7 @@ function TaskList({
                             setIsEditScheduleOpen(false);
                           }}
                         >
-                          Clear
+                          {t(locale, "clear")}
                         </button>
                       </>
                     ) : (
@@ -1341,6 +1362,7 @@ function TaskList({
                         <InlineCalendar
                           selectedDate={editing.deadline}
                           today={today}
+                          locale={locale}
                           onSelect={(deadline) => {
                             onScheduleChange({
                               deadline,
@@ -1357,7 +1379,7 @@ function TaskList({
                             setIsEditScheduleOpen(false);
                           }}
                         >
-                          Clear
+                          {t(locale, "clear")}
                         </button>
                       </>
                     )}
@@ -1371,6 +1393,7 @@ function TaskList({
         return (
           <ReadonlyTaskRow
             key={item.id}
+            locale={locale}
             item={item}
             isDisabled={isDisabled}
             isLogbook={isLogbook}
@@ -1386,6 +1409,7 @@ function TaskList({
 }
 
 type ReadonlyTaskRowProps = {
+  locale: AppLocale;
   item: Task;
   isDisabled: boolean;
   isLogbook: boolean;
@@ -1397,6 +1421,7 @@ type ReadonlyTaskRowProps = {
 
 const ReadonlyTaskRow = memo(
   function ReadonlyTaskRow({
+    locale,
     item,
     isDisabled,
     isLogbook,
@@ -1451,6 +1476,7 @@ const ReadonlyTaskRow = memo(
                 today={today}
                 evening={evening}
                 referenceDate={overdueDate}
+                locale={locale}
               />
             ) : null}
             <div className="row-actions" />
@@ -1461,7 +1487,7 @@ const ReadonlyTaskRow = memo(
             <textarea
               className="note-input draft-offset"
               value={item.note ?? ""}
-              placeholder="Note (optional)"
+              placeholder={t(locale, "note_optional")}
               rows={3}
               readOnly
               data-readonly="true"
@@ -1474,6 +1500,7 @@ const ReadonlyTaskRow = memo(
   },
   (prev, next) =>
     prev.item === next.item &&
+    prev.locale === next.locale &&
     prev.isDisabled === next.isDisabled &&
     prev.isLogbook === next.isLogbook &&
     prev.today === next.today &&
@@ -1481,35 +1508,38 @@ const ReadonlyTaskRow = memo(
 );
 
 function getTaskDateLabel(
+  locale: AppLocale,
   task: Task,
   today: string,
   evening: boolean,
   referenceDate?: string
 ) {
   if (referenceDate) return referenceDate;
-  if (task.someday) return "Someday";
+  if (task.someday) return t(locale, "someday");
   if (!task.date) return "";
-  if (task.date === today) return evening ? "This Evening" : "Today";
+  if (task.date === today) return evening ? t(locale, "this_evening") : t(locale, "today");
   return task.date;
 }
 
 function TaskDateBadge({
+  locale,
   task,
   today,
   evening,
   referenceDate,
 }: {
+  locale: AppLocale;
   task: Task;
   today: string;
   evening: boolean;
   referenceDate?: string;
 }) {
-  const label = getTaskDateLabel(task, today, evening, referenceDate);
+  const label = getTaskDateLabel(locale, task, today, evening, referenceDate);
   if (!label) return null;
-  return <DateBadge label={label} today={today} />;
+  return <DateBadge label={label} today={today} locale={locale} />;
 }
 
-function buildTaskGroups(items: Task[], projects: ProjectRef[], areas: AreaRef[], view: string) {
+function buildTaskGroups(items: Task[], projects: ProjectRef[], areas: AreaRef[], locale: AppLocale) {
   const projectOrder = new Map(projects.map((p, index) => [p.id, index]));
   const areaOrder = new Map(areas.map((a, index) => [a.id, index]));
   const projectNameById = new Map(projects.map((p) => [p.id, p.name]));
@@ -1520,7 +1550,7 @@ function buildTaskGroups(items: Task[], projects: ProjectRef[], areas: AreaRef[]
 
   for (const item of items) {
     if (item.projectId) {
-      const title = projectNameById.get(item.projectId) ?? "Project";
+      const title = projectNameById.get(item.projectId) ?? t(locale, "no_group_project");
       if (!projectGroups.has(item.projectId)) {
         projectGroups.set(item.projectId, { title, items: [] });
       }
@@ -1528,7 +1558,7 @@ function buildTaskGroups(items: Task[], projects: ProjectRef[], areas: AreaRef[]
       continue;
     }
     if (item.areaId) {
-      const title = areaNameById.get(item.areaId) ?? "Area";
+      const title = areaNameById.get(item.areaId) ?? t(locale, "no_group_area");
       if (!areaGroups.has(item.areaId)) {
         areaGroups.set(item.areaId, { title, items: [] });
       }
@@ -1591,7 +1621,13 @@ function buildTaskGroups(items: Task[], projects: ProjectRef[], areas: AreaRef[]
   return sections;
 }
 
-function buildLogbookGroups(items: Task[], today: string, tzOffsetMinutes: number) {
+function buildLogbookGroups(
+  items: Task[],
+  today: string,
+  tzOffsetMinutes: number,
+  locale: AppLocale
+) {
+  const localeTag = locale === "ja" ? "ja-JP" : locale === "zh" ? "zh-CN" : "en-US";
   const todayNum = dateToNumber(today);
   const yesterdayNum = todayNum - 1;
   const weekStartNum = startOfWeekNumber(today);
@@ -1629,21 +1665,28 @@ function buildLogbookGroups(items: Task[], today: string, tzOffsetMinutes: numbe
 
   const result: Array<{ key: string; title: string; items: Task[] }> = [];
   if (yesterdayItems.length > 0) {
-    result.push({ key: "yesterday", title: "昨日", items: yesterdayItems });
+    result.push({ key: "yesterday", title: t(locale, "yesterday"), items: yesterdayItems });
   }
   if (thisWeekItems.length > 0) {
-    result.push({ key: "this-week", title: "今週", items: thisWeekItems });
+    result.push({ key: "this-week", title: t(locale, "this_week"), items: thisWeekItems });
   }
   if (thisMonthItems.length > 0 && todayParts) {
-    result.push({ key: "this-month", title: `${todayParts.month + 1}月`, items: thisMonthItems });
+    const monthTitle = new Intl.DateTimeFormat(localeTag, { month: "long" }).format(
+      new Date(Date.UTC(todayParts.year, todayParts.month, 1))
+    );
+    result.push({ key: "this-month", title: monthTitle, items: thisMonthItems });
   }
 
   const sortedMonths = [...monthGroups.entries()].sort(([a], [b]) => b - a);
   for (const [monthKey, list] of sortedMonths) {
+    const year = Math.floor(monthKey / 12);
     const monthIndex = monthKey % 12;
+    const monthTitle = new Intl.DateTimeFormat(localeTag, { month: "long" }).format(
+      new Date(Date.UTC(year, monthIndex, 1))
+    );
     result.push({
       key: `month-${monthKey}`,
-      title: `${monthIndex + 1}月`,
+      title: monthTitle,
       items: list,
     });
   }
@@ -1671,32 +1714,32 @@ function startOfWeekNumber(value: string) {
   return Math.floor(date.getTime() / 86400000);
 }
 
-function DateBadge({ label, today }: { label: string; today: string }) {
-  if (label === "Today") {
+function DateBadge({ label, today, locale }: { label: string; today: string; locale: AppLocale }) {
+  if (label === t(locale, "today")) {
     return (
       <span className="date-badge date-today">
         <i className="fa-solid fa-star icon-today" aria-hidden />
-        Today
+        {t(locale, "today")}
       </span>
     );
   }
-  if (label === "This Evening") {
+  if (label === t(locale, "this_evening")) {
     return (
       <span className="date-badge date-evening">
         <i className="fa-solid fa-moon date-evening" aria-hidden />
-        This Evening
+        {t(locale, "this_evening")}
       </span>
     );
   }
-  if (label === "Someday") {
+  if (label === t(locale, "someday")) {
     return (
       <span className="date-badge date-someday">
         <i className="fa-solid fa-archive icon-someday" aria-hidden />
-        Someday
+        {t(locale, "someday")}
       </span>
     );
   }
-  const formatted = formatRelativeDateLabel(label, today);
+  const formatted = formatRelativeDateLabel(label, today, locale);
   if (!formatted) return null;
   const isOverdue = formatted.isPast;
   return (
@@ -1713,10 +1756,11 @@ function DateBadge({ label, today }: { label: string; today: string }) {
 type InlineCalendarProps = {
   selectedDate: string;
   today: string;
+  locale: AppLocale;
   onSelect: (date: string) => void;
 };
 
-function InlineCalendar({ selectedDate, today, onSelect }: InlineCalendarProps) {
+function InlineCalendar({ selectedDate, today, locale, onSelect }: InlineCalendarProps) {
   const initial = useMemo(() => {
     const parsed = parseDateString(today);
     return parsed ?? getUtcDateParts(new Date());
@@ -1728,7 +1772,7 @@ function InlineCalendar({ selectedDate, today, onSelect }: InlineCalendarProps) 
     if (parsed) setCursor({ year: parsed.year, month: parsed.month });
   }, [today]);
 
-  const monthLabel = formatMonthLabel(cursor.year, cursor.month);
+  const monthLabel = formatMonthLabel(cursor.year, cursor.month, locale);
   const cells = buildMonthGrid(cursor.year, cursor.month);
 
   return (
@@ -1755,7 +1799,7 @@ function InlineCalendar({ selectedDate, today, onSelect }: InlineCalendarProps) 
         </button>
       </div>
       <div className="calendar-weekdays">
-        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+        {getWeekdayLabels(locale).map((day) => (
           <span key={day}>{day}</span>
         ))}
       </div>
@@ -1816,14 +1860,15 @@ function formatDateString(year: number, month: number, day: number) {
   return `${year}-${mm}-${dd}`;
 }
 
-function formatRelativeDateLabel(date: string, today: string) {
+function formatRelativeDateLabel(date: string, today: string, locale: AppLocale) {
   const target = parseDateString(date);
   const base = parseDateString(today);
   if (!target || !base) return null;
   const diff = dateToNumber(date) - dateToNumber(today);
-  const formatter = new Intl.DateTimeFormat("en-US", { weekday: "short" });
+  const localeTag = locale === "ja" ? "ja-JP" : locale === "zh" ? "zh-CN" : "en-US";
+  const formatter = new Intl.DateTimeFormat(localeTag, { weekday: "short" });
   const weekday = formatter.format(new Date(Date.UTC(target.year, target.month, target.day)));
-  if (diff === 1) return { text: "Tomorrow", isPast: false };
+  if (diff === 1) return { text: t(locale, "tomorrow"), isPast: false };
   if (diff >= 2 && diff <= 5) return { text: weekday, isPast: false };
   if (diff >= 6) {
     const month = target.month + 1;
@@ -1843,11 +1888,21 @@ function isDateBefore(value: string, today: string) {
   return dateToNumber(value) < dateToNumber(today);
 }
 
-function formatMonthLabel(year: number, month: number) {
-  return new Date(Date.UTC(year, month, 1)).toLocaleString("en-US", {
+function formatMonthLabel(year: number, month: number, locale: AppLocale) {
+  const localeTag = locale === "ja" ? "ja-JP" : locale === "zh" ? "zh-CN" : "en-US";
+  return new Date(Date.UTC(year, month, 1)).toLocaleString(localeTag, {
     month: "short",
     year: "numeric",
   });
+}
+
+function getWeekdayLabels(locale: AppLocale) {
+  const localeTag = locale === "ja" ? "ja-JP" : locale === "zh" ? "zh-CN" : "en-US";
+  const formatter = new Intl.DateTimeFormat(localeTag, { weekday: "short" });
+  const base = Date.UTC(2023, 0, 1);
+  return Array.from({ length: 7 }, (_, i) =>
+    formatter.format(new Date(base + i * 86400000))
+  );
 }
 
 function shiftMonth(year: number, month: number, delta: number) {

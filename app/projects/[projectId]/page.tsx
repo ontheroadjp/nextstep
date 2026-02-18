@@ -3,9 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { AccessSettingsFooter } from "../../_components/AccessSettingsFooter";
+import { LocaleSwitcher } from "../../_components/LocaleSwitcher";
 import { PageHero } from "../../_components/PageHero";
 import { PageMidHeader } from "../../_components/PageMidHeader";
 import { useClientAuth } from "../../_hooks/useClientAuth";
+import { useLocale } from "../../_hooks/useLocale";
 import { useStoredJson } from "../../_hooks/useStoredState";
 import { getScheduleLabel, getTodayString } from "../../_lib/date";
 import {
@@ -15,6 +17,7 @@ import {
 } from "../../_lib/deadline";
 import { formatOverdueDaysAgo } from "../../_lib/overdue";
 import { sortMixedByDateAndCreated } from "../../_lib/task_sort";
+import { t, type AppLocale } from "../../_lib/i18n";
 
 type Task = {
   id: string;
@@ -52,6 +55,7 @@ type ProjectState =
     };
 
 export default function ProjectPage() {
+  const { locale, setLocale } = useLocale();
   const params = useParams();
   const projectId = String(params.projectId ?? "");
   const {
@@ -506,7 +510,8 @@ const handleTaskClick = async (task: Task) => {
       <PageHero
         eyebrow="Project"
         title={pageTitle}
-        lead="詳細UIは後で調整します。今は一覧だけ確認できます。"
+        lead={t(locale, "view_detail_lead")}
+        rightSlot={<LocaleSwitcher locale={locale} setLocale={setLocale} />}
       />
 
       <PageMidHeader title={pageTitle} />
@@ -525,6 +530,7 @@ const handleTaskClick = async (task: Task) => {
           {state.status === "idle" && <p className="muted">No data yet.</p>}
           {state.status === "ready" && (
             <TaskList
+              locale={locale}
               items={sortMixedByDateAndCreated(state.tasks)}
               editing={editing}
               isLocked={isLocked}
@@ -560,6 +566,7 @@ const handleTaskClick = async (task: Task) => {
         </button>
       </section>
       <AccessSettingsFooter
+        locale={locale}
         authProvider={authProvider}
         setAuthProvider={setAuthProvider}
         loginEmail={loginEmail}
@@ -581,6 +588,7 @@ const handleTaskClick = async (task: Task) => {
 }
 
 type TaskListProps = {
+  locale: AppLocale;
   items: Task[];
   editing: Editing | null;
   isLocked: boolean;
@@ -606,6 +614,7 @@ type TaskListProps = {
 };
 
 function TaskList({
+  locale,
   items,
   editing,
   isLocked,
@@ -692,7 +701,7 @@ function TaskList({
                     </div>
                   )}
                   <div className="schedule draft-offset">
-                    {getScheduleLabel(editing, today) ? (
+                    {getScheduleLabel(editing, today, locale) ? (
                       <button
                         className="schedule-label-button"
                         onClick={(event) => {
@@ -702,7 +711,8 @@ function TaskList({
                         onPointerDown={(event) => event.stopPropagation()}
                       >
                         <DateBadge
-                          label={getScheduleLabel(editing, today)}
+                          label={getScheduleLabel(editing, today, locale)}
+                          locale={locale}
                           today={today}
                         />
                       </button>
@@ -710,7 +720,7 @@ function TaskList({
                       <span />
                     )}
                     <div className="icon-row">
-                      {!getScheduleLabel(editing, today) && (
+                      {!getScheduleLabel(editing, today, locale) && (
                         <button
                           className="icon-button"
                           onClick={(event) => {
@@ -743,7 +753,7 @@ function TaskList({
                     <div className="deadline-meta draft-offset">
                       <span className="date-badge">
                         <i className="fa-solid fa-flag icon-upcoming" aria-hidden />
-                        Deadline {editing.deadline}
+                        {t(locale, "deadline")} {editing.deadline}
                       </span>
                     </div>
                   ) : null}
@@ -764,7 +774,7 @@ function TaskList({
                             setIsEditScheduleOpen(false);
                           }}
                         >
-                          Today
+                          {t(locale, "today")}
                         </button>
                         <button
                           className="pill ghost"
@@ -778,9 +788,10 @@ function TaskList({
                           }}
                         >
                           <i className="fa-solid fa-moon" aria-hidden />
-                          This Evening
+                          {t(locale, "this_evening")}
                         </button>
                         <InlineCalendar
+                          locale={locale}
                           selectedDate={editing.someday ? "" : editing.date}
                           today={today}
                           onSelect={(date) => {
@@ -800,7 +811,7 @@ function TaskList({
                           }}
                         >
                           <i className="fa-solid fa-archive icon-someday" aria-hidden />
-                          Someday
+                          {t(locale, "someday")}
                         </button>
                         <button
                           className="pill ghost clear-date"
@@ -809,12 +820,13 @@ function TaskList({
                             setIsEditScheduleOpen(false);
                           }}
                         >
-                          Clear
+                          {t(locale, "clear")}
                         </button>
                       </>
                     ) : (
                       <>
                         <InlineCalendar
+                          locale={locale}
                           selectedDate={editing.deadline}
                           today={today}
                           onSelect={(deadline) => {
@@ -833,7 +845,7 @@ function TaskList({
                             setIsEditScheduleOpen(false);
                           }}
                         >
-                          Clear
+                          {t(locale, "clear")}
                         </button>
                       </>
                     )}
@@ -880,6 +892,7 @@ function TaskList({
                   if (!refDate || !isDateBefore(refDate, today)) return null;
                   return (
                     <TaskDateBadge
+                      locale={locale}
                       task={item}
                       today={today}
                       eveningMap={eveningMap}
@@ -901,60 +914,63 @@ function TaskList({
 }
 
 function getTaskDateLabel(
+  locale: AppLocale,
   task: Task,
   today: string,
   eveningMap: Record<string, boolean>,
   referenceDate?: string
 ) {
   if (referenceDate) return referenceDate;
-  if (task.someday) return "Someday";
+  if (task.someday) return t(locale, "someday");
   if (!task.date) return "";
-  if (task.date === today) return eveningMap[task.id] ? "This Evening" : "Today";
+  if (task.date === today) return eveningMap[task.id] ? t(locale, "this_evening") : t(locale, "today");
   return task.date;
 }
 
 function TaskDateBadge({
+  locale,
   task,
   today,
   eveningMap,
   referenceDate,
 }: {
+  locale: AppLocale;
   task: Task;
   today: string;
   eveningMap: Record<string, boolean>;
   referenceDate?: string;
 }) {
-  const label = getTaskDateLabel(task, today, eveningMap, referenceDate);
+  const label = getTaskDateLabel(locale, task, today, eveningMap, referenceDate);
   if (!label) return null;
-  return <DateBadge label={label} today={today} />;
+  return <DateBadge label={label} today={today} locale={locale} />;
 }
 
-function DateBadge({ label, today }: { label: string; today: string }) {
-  if (label === "Today") {
+function DateBadge({ label, today, locale }: { label: string; today: string; locale: AppLocale }) {
+  if (label === t(locale, "today")) {
     return (
       <span className="date-badge date-today">
         <i className="fa-solid fa-star icon-today" aria-hidden />
-        Today
+        {t(locale, "today")}
       </span>
     );
   }
-  if (label === "This Evening") {
+  if (label === t(locale, "this_evening")) {
     return (
       <span className="date-badge date-evening">
         <i className="fa-solid fa-moon date-evening" aria-hidden />
-        This Evening
+        {t(locale, "this_evening")}
       </span>
     );
   }
-  if (label === "Someday") {
+  if (label === t(locale, "someday")) {
     return (
       <span className="date-badge date-someday">
         <i className="fa-solid fa-archive icon-someday" aria-hidden />
-        Someday
+        {t(locale, "someday")}
       </span>
     );
   }
-  const formatted = formatRelativeDateLabel(label, today);
+  const formatted = formatRelativeDateLabel(label, today, locale);
   if (!formatted) return null;
   const isOverdue = formatted.isPast;
   return (
@@ -969,12 +985,13 @@ function DateBadge({ label, today }: { label: string; today: string }) {
 }
 
 type InlineCalendarProps = {
+  locale: AppLocale;
   selectedDate: string;
   today: string;
   onSelect: (date: string) => void;
 };
 
-function InlineCalendar({ selectedDate, today, onSelect }: InlineCalendarProps) {
+function InlineCalendar({ locale, selectedDate, today, onSelect }: InlineCalendarProps) {
   const initial = useMemo(() => {
     const parsed = parseDateString(today);
     return parsed ?? getUtcDateParts(new Date());
@@ -986,7 +1003,7 @@ function InlineCalendar({ selectedDate, today, onSelect }: InlineCalendarProps) 
     if (parsed) setCursor({ year: parsed.year, month: parsed.month });
   }, [today]);
 
-  const monthLabel = formatMonthLabel(cursor.year, cursor.month);
+  const monthLabel = formatMonthLabel(cursor.year, cursor.month, locale);
   const cells = buildMonthGrid(cursor.year, cursor.month);
 
   return (
@@ -1013,7 +1030,7 @@ function InlineCalendar({ selectedDate, today, onSelect }: InlineCalendarProps) 
         </button>
       </div>
       <div className="calendar-weekdays">
-        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+        {getWeekdayLabels(locale).map((day) => (
           <span key={day}>{day}</span>
         ))}
       </div>
@@ -1074,14 +1091,15 @@ function formatDateString(year: number, month: number, day: number) {
   return `${year}-${mm}-${dd}`;
 }
 
-function formatRelativeDateLabel(date: string, today: string) {
+function formatRelativeDateLabel(date: string, today: string, locale: AppLocale) {
   const target = parseDateString(date);
   const base = parseDateString(today);
   if (!target || !base) return null;
   const diff = dateToNumber(date) - dateToNumber(today);
-  const formatter = new Intl.DateTimeFormat("en-US", { weekday: "short" });
+  const localeTag = locale === "ja" ? "ja-JP" : locale === "zh" ? "zh-CN" : "en-US";
+  const formatter = new Intl.DateTimeFormat(localeTag, { weekday: "short" });
   const weekday = formatter.format(new Date(Date.UTC(target.year, target.month, target.day)));
-  if (diff === 1) return { text: "Tomorrow", isPast: false };
+  if (diff === 1) return { text: t(locale, "tomorrow"), isPast: false };
   if (diff >= 2 && diff <= 5) return { text: weekday, isPast: false };
   if (diff >= 6) {
     const month = target.month + 1;
@@ -1101,11 +1119,21 @@ function isDateBefore(value: string, today: string) {
   return dateToNumber(value) < dateToNumber(today);
 }
 
-function formatMonthLabel(year: number, month: number) {
-  return new Date(Date.UTC(year, month, 1)).toLocaleString("en-US", {
+function formatMonthLabel(year: number, month: number, locale: AppLocale) {
+  const localeTag = locale === "ja" ? "ja-JP" : locale === "zh" ? "zh-CN" : "en-US";
+  return new Date(Date.UTC(year, month, 1)).toLocaleString(localeTag, {
     month: "short",
     year: "numeric",
   });
+}
+
+function getWeekdayLabels(locale: AppLocale) {
+  const localeTag = locale === "ja" ? "ja-JP" : locale === "zh" ? "zh-CN" : "en-US";
+  const formatter = new Intl.DateTimeFormat(localeTag, { weekday: "short" });
+  const base = Date.UTC(2023, 0, 1);
+  return Array.from({ length: 7 }, (_, i) =>
+    formatter.format(new Date(base + i * 86400000))
+  );
 }
 
 function shiftMonth(year: number, month: number, delta: number) {

@@ -1,4 +1,5 @@
 import { sortDatedByDateAscThenCreatedDesc } from "./task_sort";
+import { t, toIntlLocale, type AppLocale } from "./i18n";
 
 export type UpcomingTask = {
   id: string;
@@ -21,7 +22,8 @@ export type UpcomingSection =
 
 export function buildUpcomingSections<T extends UpcomingTask>(
   items: T[],
-  today: string
+  today: string,
+  locale: AppLocale = "en"
 ): Array<UpcomingSection & { items: T[] }> {
   const todayParts = parseDateString(today);
   if (!todayParts) return [];
@@ -48,7 +50,7 @@ export function buildUpcomingSections<T extends UpcomingTask>(
       key: `day-${date}`,
       kind: "day",
       dayNumber: parsed.day,
-      label: getUpcomingDayLabel(date, today),
+      label: getUpcomingDayLabel(date, today, locale),
       items: byDate.get(date) ?? [],
     });
   }
@@ -65,8 +67,8 @@ export function buildUpcomingSections<T extends UpcomingTask>(
     sections.push({
       key: `range-${rangeStart}-${endOfCurrentMonth}`,
       kind: "range",
-      title: `${formatMonthLong(todayParts.year, todayParts.month)} ${dateRangeLabel(rangeStart, endOfCurrentMonth)}`,
-      monthLabel: formatMonthLong(todayParts.year, todayParts.month),
+      title: `${formatMonthLong(todayParts.year, todayParts.month, locale)} ${dateRangeLabel(rangeStart, endOfCurrentMonth)}`,
+      monthLabel: formatMonthLong(todayParts.year, todayParts.month, locale),
       rangeLabel: dateRangeLabel(rangeStart, endOfCurrentMonth),
       items: collectItemsByRange(byDate, rangeStartNum, endOfCurrentMonthNum),
     });
@@ -83,7 +85,7 @@ export function buildUpcomingSections<T extends UpcomingTask>(
     sections.push({
       key: `month-${target.year}-${target.month}`,
       kind: "month",
-      title: formatMonthLong(target.year, target.month),
+      title: formatMonthLong(target.year, target.month, locale),
       items: collectItemsByRange(byDate, dateToNumber(monthStart), dateToNumber(monthEnd)),
     });
   }
@@ -131,16 +133,16 @@ function numberToDateString(dayNum: number) {
   return formatDateString(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
 }
 
-function getUpcomingDayLabel(date: string, today: string) {
+function getUpcomingDayLabel(date: string, today: string, locale: AppLocale) {
   const diff = dateToNumber(date) - dateToNumber(today);
-  if (diff === 1) return "Tomorrow";
-  return new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(
+  if (diff === 1) return t(locale, "tomorrow");
+  return new Intl.DateTimeFormat(toIntlLocale(locale), { weekday: "long" }).format(
     new Date(`${date}T00:00:00Z`)
   );
 }
 
-function formatMonthLong(year: number, month: number) {
-  return new Intl.DateTimeFormat("en-US", { month: "long" }).format(new Date(Date.UTC(year, month, 1)));
+function formatMonthLong(year: number, month: number, locale: AppLocale) {
+  return new Intl.DateTimeFormat(toIntlLocale(locale), { month: "long" }).format(new Date(Date.UTC(year, month, 1)));
 }
 
 function dateRangeLabel(start: string, end: string) {

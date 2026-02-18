@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { LocaleSwitcher } from "../_components/LocaleSwitcher";
 import { PageHero } from "../_components/PageHero";
 import { useClientAuth } from "../_hooks/useClientAuth";
+import { useLocale } from "../_hooks/useLocale";
+import { t } from "../_lib/i18n";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,6 +22,7 @@ export default function LoginPage() {
     tzOffset,
     setTzOffset,
   } = useClientAuth();
+  const { locale, setLocale } = useLocale();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -35,7 +39,8 @@ export default function LoginPage() {
       <PageHero
         eyebrow="Welcome"
         title="Login"
-        lead="公開版をご利用いただくにはログインしてください。"
+        lead={t(locale, "hero_public_lead")}
+        rightSlot={<LocaleSwitcher locale={locale} setLocale={setLocale} />}
       />
 
       <section className="grid">
@@ -43,7 +48,7 @@ export default function LoginPage() {
           {!isAuthenticated ? (
             <>
               <label>
-                Login Method
+                {t(locale, "login_method")}
                 <select
                   value={authProvider}
                   onChange={(e) => setAuthProvider(e.target.value as typeof authProvider)}
@@ -52,7 +57,7 @@ export default function LoginPage() {
                 </select>
               </label>
               <label>
-                Email
+                {t(locale, "email")}
                 <input
                   type="email"
                   value={email}
@@ -62,7 +67,7 @@ export default function LoginPage() {
                 />
               </label>
               <label>
-                Password
+                {t(locale, "password")}
                 <input
                   type="password"
                   value={password}
@@ -72,7 +77,7 @@ export default function LoginPage() {
                 />
               </label>
               <label>
-                TZ Offset (minutes)
+                {t(locale, "tz_offset")}
                 <input
                   value={tzOffset}
                   onChange={(e) => setTzOffset(e.target.value)}
@@ -81,20 +86,20 @@ export default function LoginPage() {
               </label>
               <div className="actions">
                 <button onClick={handleLogin} disabled={isAuthLoading || !email.trim() || !password}>
-                  {isAuthLoading ? "Logging in..." : "Login"}
+                  {isAuthLoading ? t(locale, "logging_in") : t(locale, "login")}
                 </button>
                 <Link className="pill-link" href="/top">
-                  Back
+                  {t(locale, "back")}
                 </Link>
               </div>
               {authError && <p className="error">{authError}</p>}
             </>
           ) : (
             <>
-              <p className="muted">ログイン済みです。ダッシュボードへ移動できます。</p>
+              <p className="muted">{t(locale, "already_logged_in_dashboard")}</p>
               <div className="actions">
-                <button onClick={() => router.push("/top")}>Go to Dashboard</button>
-                <button onClick={logout}>Logout</button>
+                <button onClick={() => router.push("/top")}>{t(locale, "go_to_dashboard")}</button>
+                <button onClick={logout}>{t(locale, "logout")}</button>
               </div>
             </>
           )}
